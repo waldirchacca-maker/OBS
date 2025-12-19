@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Profesional de Correcciones y Observaciones</title>
+    <title>Sistema Dinámico de Correcciones y Observaciones</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --primary: #1a365d;
@@ -104,6 +103,8 @@
             border-radius: 8px;
             text-align: center;
             transition: var(--transition);
+            position: relative;
+            overflow: hidden;
         }
 
         .stat-card:hover {
@@ -111,11 +112,40 @@
             box-shadow: var(--shadow);
         }
 
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .stat-card.updated::after {
+            transform: translateX(0);
+            animation: slideIn 2s ease;
+        }
+
+        @keyframes slideIn {
+            0% { transform: translateX(-100%); }
+            50% { transform: translateX(0); }
+            100% { transform: translateX(100%); }
+        }
+
         .stat-number {
             font-size: 2rem;
             font-weight: 700;
             color: var(--primary);
             margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-number.updated {
+            color: var(--accent);
+            transform: scale(1.1);
         }
 
         .stat-label {
@@ -175,37 +205,32 @@
             background: var(--primary);
         }
 
-        /* Filters */
-        .filters {
-            margin-top: 30px;
-        }
-
-        .filter-group {
+        /* Live Updates Indicator */
+        .live-updates {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 20px;
-        }
-
-        .filter-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--secondary);
-        }
-
-        select {
-            width: 100%;
             padding: 12px;
-            border: 2px solid var(--light-gray);
+            background: rgba(56, 161, 105, 0.1);
             border-radius: 8px;
-            background: white;
-            color: var(--dark);
-            font-size: 0.95rem;
-            transition: var(--transition);
+            color: var(--success);
+            font-size: 0.9rem;
+            font-weight: 500;
         }
 
-        select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
         /* Main Content */
@@ -238,12 +263,16 @@
             font-size: 0.95rem;
         }
 
-        .date-display {
+        .last-update {
             background: var(--light);
             padding: 10px 20px;
             border-radius: 8px;
             font-weight: 500;
             color: var(--primary);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         /* Form Card */
@@ -489,6 +518,7 @@
         .observations-grid {
             display: grid;
             gap: 20px;
+            min-height: 200px;
         }
 
         .observation-card {
@@ -499,6 +529,29 @@
             padding: 25px;
             transition: var(--transition);
             position: relative;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .observation-card.new {
+            border-color: var(--success);
+            animation: highlight 1s ease;
+        }
+
+        @keyframes highlight {
+            0% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(56, 161, 105, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0); }
         }
 
         .observation-card:hover {
@@ -572,6 +625,12 @@
             border-radius: 15px;
             font-size: 0.8rem;
             font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .observation-status:hover {
+            transform: scale(1.05);
         }
 
         .status-pending { background: rgba(214, 158, 46, 0.1); color: var(--warning); }
@@ -651,69 +710,29 @@
             color: var(--gray);
         }
 
-        /* Modal */
-        .modal {
-            display: none;
+        /* Auto-refresh Indicator */
+        .auto-refresh {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
+            bottom: 20px;
+            right: 20px;
             background: white;
-            border-radius: var(--radius);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            width: 90%;
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            padding: 25px 30px;
-            border-bottom: 2px solid var(--light-gray);
+            padding: 10px 15px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--gray);
+            z-index: 100;
         }
 
-        .modal-header h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .close-modal {
-            width: 40px;
-            height: 40px;
+        .refresh-dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--light);
-            color: var(--dark);
-            cursor: pointer;
-            transition: var(--transition);
-            border: none;
-        }
-
-        .close-modal:hover {
-            background: var(--danger);
-            color: white;
-        }
-
-        .modal-body {
-            padding: 30px;
+            background: var(--success);
+            animation: pulse 1.5s infinite;
         }
 
         /* Responsive */
@@ -766,125 +785,6 @@
                 padding: 15px;
             }
         }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .observation-card {
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        /* Notification */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 16px 24px;
-            border-radius: 8px;
-            background: white;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transform: translateX(150%);
-            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            z-index: 2000;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .notification-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.2rem;
-        }
-
-        .notification.success .notification-icon { background: var(--success); }
-        .notification.error .notification-icon { background: var(--danger); }
-        .notification.info .notification-icon { background: var(--accent); }
-
-        .notification-content h4 {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .notification-content p {
-            font-size: 0.9rem;
-            color: var(--gray);
-        }
-
-        /* Export Options */
-        .export-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .export-option {
-            padding: 20px;
-            border: 2px solid var(--light-gray);
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .export-option:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
-        }
-
-        .export-option i {
-            font-size: 2rem;
-            color: var(--accent);
-            margin-bottom: 10px;
-        }
-
-        .export-option h4 {
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: var(--primary);
-        }
-
-        .export-option p {
-            font-size: 0.9rem;
-            color: var(--gray);
-        }
-
-        /* Summary Table in PDF */
-        .summary-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-
-        .summary-table th {
-            background: var(--primary);
-            color: white;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-        }
-
-        .summary-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--light-gray);
-        }
-
-        .summary-table tr:nth-child(even) {
-            background: var(--light);
-        }
     </style>
 </head>
 <body>
@@ -893,28 +793,33 @@
         <div class="sidebar">
             <div class="logo">
                 <div class="logo-icon">
-                    <i class="fas fa-clipboard-check"></i>
+                    <i class="fas fa-sync-alt"></i>
                 </div>
                 <div class="logo-text">
-                    <h1>Correcciones PRO</h1>
-                    <p>Sistema profesional de registro</p>
+                    <h1>Correcciones LIVE</h1>
+                    <p>Actualización en tiempo real</p>
                 </div>
             </div>
 
+            <div class="live-updates">
+                <div class="live-dot"></div>
+                <span>Actualizando en tiempo real</span>
+            </div>
+
             <div class="stats-grid">
-                <div class="stat-card">
+                <div class="stat-card" id="stat-total">
                     <div class="stat-number" id="total-observations">0</div>
                     <div class="stat-label">Observaciones</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" id="stat-pending">
                     <div class="stat-number" id="pending-count">0</div>
                     <div class="stat-label">Pendientes</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" id="stat-high">
                     <div class="stat-number" id="high-priority-count">0</div>
                     <div class="stat-label">Alta Prioridad</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" id="stat-docs">
                     <div class="stat-number" id="documents-count">0</div>
                     <div class="stat-label">Documentos</div>
                 </div>
@@ -925,50 +830,24 @@
                 <button class="action-btn primary" id="new-observation-btn">
                     <i class="fas fa-plus"></i> Nueva Observación
                 </button>
+                <button class="action-btn" id="clear-form-btn-sidebar">
+                    <i class="fas fa-broom"></i> Limpiar Formulario
+                </button>
+                <button class="action-btn" id="refresh-data-btn">
+                    <i class="fas fa-redo"></i> Refrescar Datos
+                </button>
                 <button class="action-btn" id="export-pdf-btn">
                     <i class="fas fa-file-pdf"></i> Generar Reporte
                 </button>
-                <button class="action-btn" id="view-all-btn">
-                    <i class="fas fa-list"></i> Ver Todas
-                </button>
-                <button class="action-btn" id="clear-completed-btn">
-                    <i class="fas fa-check-double"></i> Limpiar Completadas
-                </button>
             </div>
 
-            <div class="filters">
-                <h3 class="section-title"><i class="fas fa-filter"></i> Filtros</h3>
-                <div class="filter-group">
-                    <label class="filter-label">Prioridad</label>
-                    <select id="filter-priority">
-                        <option value="all">Todas las prioridades</option>
-                        <option value="high">Alta Prioridad</option>
-                        <option value="medium">Prioridad Media</option>
-                        <option value="low">Baja Prioridad</option>
-                    </select>
+            <div class="recent-documents" style="margin-top: 30px;">
+                <h3 class="section-title"><i class="fas fa-file-alt"></i> Documentos Recientes</h3>
+                <div id="recent-documents-list" style="max-height: 200px; overflow-y: auto;">
+                    <p style="text-align: center; color: var(--gray); padding: 10px; font-size: 0.9rem;">
+                        No hay documentos aún
+                    </p>
                 </div>
-                <div class="filter-group">
-                    <label class="filter-label">Estado</label>
-                    <select id="filter-status">
-                        <option value="all">Todos los estados</option>
-                        <option value="pending">Pendiente</option>
-                        <option value="in-progress">En Progreso</option>
-                        <option value="completed">Completado</option>
-                        <option value="cancelled">Cancelado</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Documento</label>
-                    <select id="filter-document">
-                        <option value="all">Todos los documentos</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="backup-info" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--light-gray);">
-                <p style="font-size: 0.85rem; color: var(--gray); text-align: center;">
-                    <i class="fas fa-database"></i> Datos almacenados localmente
-                </p>
             </div>
         </div>
 
@@ -977,12 +856,12 @@
             <!-- Header -->
             <div class="header">
                 <div class="header-title">
-                    <h2 id="page-title">Registro de Correcciones</h2>
-                    <p>Gestión profesional de observaciones técnicas</p>
+                    <h2 id="page-title">Registro Dinámico de Correcciones</h2>
+                    <p>Los datos se actualizan automáticamente en tiempo real</p>
                 </div>
-                <div class="date-display">
-                    <i class="far fa-calendar"></i>
-                    <span id="current-date"></span>
+                <div class="last-update">
+                    <i class="fas fa-clock"></i>
+                    <span id="last-update-time">Actualizado hace 0 segundos</span>
                 </div>
             </div>
 
@@ -990,13 +869,20 @@
             <div class="form-card" id="observation-form">
                 <div class="form-header">
                     <i class="fas fa-edit"></i>
-                    <h3>Nueva Observación / Corrección</h3>
+                    <h3 id="form-title">Nueva Observación / Corrección</h3>
+                    <span id="form-status" style="margin-left: auto; font-size: 0.9rem; color: var(--accent);">
+                        <i class="fas fa-pen"></i> Modo: Nuevo
+                    </span>
                 </div>
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="document-name"><i class="fas fa-file-alt"></i> Nombre del Documento</label>
+                        <label for="document-name">
+                            <i class="fas fa-file-alt"></i> Nombre del Documento
+                            <span id="doc-count" style="float: right; font-size: 0.8rem; color: var(--accent);"></span>
+                        </label>
                         <input type="text" id="document-name" placeholder="Ej. TISUR-1502-042-DWG-00001_B" required>
+                        <div id="document-suggestions" style="margin-top: 5px; font-size: 0.8rem; color: var(--gray);"></div>
                     </div>
 
                     <div class="form-group">
@@ -1032,16 +918,21 @@
                     </div>
 
                     <div class="form-group full-width">
-                        <label for="observation-details"><i class="fas fa-align-left"></i> Descripción Detallada</label>
-                        <textarea id="observation-details" placeholder="Describe detalladamente la observación. Usa viñetas para organizar la información:
-• Primer punto
-• Segundo punto
-• Cambios realizados" rows="4" required></textarea>
+                        <label for="observation-details">
+                            <i class="fas fa-align-left"></i> Descripción Detallada
+                            <span style="float: right; font-size: 0.8rem; color: var(--gray);" id="char-count">0 caracteres</span>
+                        </label>
+                        <textarea id="observation-details" placeholder="Describe detalladamente la observación. Usa viñetas (•) para organizar la información:" rows="4" required></textarea>
                     </div>
 
                     <div class="form-group">
                         <label for="observation-reference"><i class="fas fa-hashtag"></i> Referencia (Número)</label>
-                        <input type="text" id="observation-reference" placeholder="Ej. 1, 2, 3...">
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="observation-reference" placeholder="Auto-generado" style="flex: 1;" readonly>
+                            <button type="button" id="generate-ref-btn" class="btn-secondary" style="padding: 10px 15px;">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -1058,8 +949,11 @@
                 </div>
 
                 <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-edit-btn" style="display: none;">
+                        <i class="fas fa-times"></i> Cancelar Edición
+                    </button>
                     <button type="button" class="btn btn-secondary" id="clear-form-btn">
-                        <i class="fas fa-times"></i> Limpiar
+                        <i class="fas fa-broom"></i> Limpiar Todo
                     </button>
                     <button type="submit" class="btn btn-primary" id="save-observation-btn">
                         <i class="fas fa-save"></i> Guardar Observación
@@ -1070,7 +964,12 @@
             <!-- Lista de Observaciones -->
             <div class="observations-container">
                 <div class="observations-header">
-                    <h3>Observaciones Registradas</h3>
+                    <div>
+                        <h3>Observaciones Registradas</h3>
+                        <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;" id="observations-count">
+                            Mostrando 0 de 0 observaciones
+                        </p>
+                    </div>
                     <div class="search-box">
                         <i class="fas fa-search"></i>
                         <input type="text" id="search-observations" placeholder="Buscar observaciones...">
@@ -1084,41 +983,10 @@
         </div>
     </div>
 
-    <!-- Modal de Exportación -->
-    <div class="modal" id="export-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-file-export"></i> Exportar Reporte</h3>
-                <button class="close-modal" id="close-export-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 20px; color: var(--gray);">Selecciona el formato para exportar tu registro de observaciones.</p>
-                
-                <div class="export-options">
-                    <div class="export-option" data-format="pdf-detailed">
-                        <i class="fas fa-file-pdf"></i>
-                        <h4>PDF Detallado</h4>
-                        <p>Reporte completo con formato profesional</p>
-                    </div>
-                    <div class="export-option" data-format="pdf-summary">
-                        <i class="fas fa-file-contract"></i>
-                        <h4>PDF Resumen</h4>
-                        <p>Tabla resumen y lista de observaciones</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notification -->
-    <div class="notification" id="notification">
-        <div class="notification-icon">
-            <i class="fas fa-check"></i>
-        </div>
-        <div class="notification-content">
-            <h4 id="notification-title">Éxito</h4>
-            <p id="notification-message">Operación realizada correctamente</p>
-        </div>
+    <!-- Auto-refresh Indicator -->
+    <div class="auto-refresh">
+        <div class="refresh-dot"></div>
+        <span>Sistema activo</span>
     </div>
 
     <script>
@@ -1131,59 +999,58 @@
             document: 'all',
             search: ''
         };
+        let lastUpdateTime = Date.now();
+        let autoUpdateInterval;
+        let nextReference = 1;
 
         // Inicializar la aplicación
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
             setupEventListeners();
             loadObservations();
-            updateUI();
+            updateAll();
+            startAutoUpdate();
             
-            // Agregar observación de ejemplo
-            addExampleObservation();
+            // Agregar observación de ejemplo si no hay datos
+            if (observations.length === 0) {
+                addExampleObservation();
+            }
         });
 
         function initializeApp() {
-            // Establecer fecha actual
-            const now = new Date();
-            const options = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            };
-            document.getElementById('current-date').textContent = 
-                now.toLocaleDateString('es-ES', options);
+            // Calcular siguiente referencia
+            calculateNextReference();
+            
+            // Actualizar contador de caracteres
+            document.getElementById('observation-details').addEventListener('input', function() {
+                document.getElementById('char-count').textContent = 
+                    `${this.value.length} caracteres`;
+            });
+            
+            // Generar referencia automáticamente
+            document.getElementById('generate-ref-btn').addEventListener('click', generateReference);
+            
+            // Auto-generar referencia inicial
+            generateReference();
         }
 
-        function addExampleObservation() {
-            // Solo agregar ejemplo si no hay observaciones
-            if (observations.length > 0) return;
+        function startAutoUpdate() {
+            // Actualizar cada 2 segundos
+            autoUpdateInterval = setInterval(() => {
+                updateLastUpdateTime();
+                updateStatsAnimation();
+            }, 2000);
             
-            const exampleObservation = {
-                id: Date.now(),
-                document: "TISUR-1502-042-DWG-00001_B",
-                title: "Corrección del NÚMERO DE PLANO PROVEEDOR",
-                priority: "medium",
-                status: "completed",
-                details: "Se modificó el numero de plano del proveedor de \"006CIV24-1502-042-DWG-00003\" a \"006CIV24-1502-042-DWG-00001\"",
-                reference: "1",
-                category: "plano",
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                formattedDate: formatDate(new Date())
-            };
-            
-            observations.push(exampleObservation);
-            saveObservations();
-            updateUI();
-            filterObservations();
+            // Actualizar contador de tiempo
+            setInterval(updateLastUpdateTime, 1000);
         }
 
         function setupEventListeners() {
             // Formulario
             document.getElementById('save-observation-btn').addEventListener('click', saveObservation);
             document.getElementById('clear-form-btn').addEventListener('click', clearForm);
+            document.getElementById('clear-form-btn-sidebar').addEventListener('click', clearForm);
+            document.getElementById('cancel-edit-btn').addEventListener('click', cancelEdit);
             
             // Prioridad
             document.querySelectorAll('.priority-option').forEach(option => {
@@ -1209,55 +1076,19 @@
                 scrollToForm();
             });
             
-            document.getElementById('export-pdf-btn').addEventListener('click', () => {
-                document.getElementById('export-modal').classList.add('active');
-            });
+            document.getElementById('refresh-data-btn').addEventListener('click', refreshData);
             
-            document.getElementById('view-all-btn').addEventListener('click', () => {
-                resetFilters();
-                filterObservations();
-            });
+            document.getElementById('export-pdf-btn').addEventListener('click', exportToPDF);
             
-            document.getElementById('clear-completed-btn').addEventListener('click', clearCompletedObservations);
-            
-            // Filtros
-            document.getElementById('filter-priority').addEventListener('change', function() {
-                currentFilter.priority = this.value;
-                filterObservations();
-            });
-            
-            document.getElementById('filter-status').addEventListener('change', function() {
-                currentFilter.status = this.value;
-                filterObservations();
-            });
-            
-            document.getElementById('filter-document').addEventListener('change', function() {
-                currentFilter.document = this.value;
-                filterObservations();
-            });
-            
-            document.getElementById('search-observations').addEventListener('input', function() {
+            // Búsqueda
+            document.getElementById('search-observations').addEventListener('input', debounce(function() {
                 currentFilter.search = this.value.toLowerCase();
                 filterObservations();
-            });
+            }, 300));
             
-            // Modal
-            document.getElementById('close-export-modal').addEventListener('click', () => {
-                document.getElementById('export-modal').classList.remove('active');
-            });
-            
-            document.querySelectorAll('.export-option').forEach(option => {
-                option.addEventListener('click', function() {
-                    const format = this.dataset.format;
-                    generateExport(format);
-                });
-            });
-            
-            // Cerrar modal al hacer clic fuera
-            document.getElementById('export-modal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    this.classList.remove('active');
-                }
+            // Autocompletar documento
+            document.getElementById('document-name').addEventListener('input', function() {
+                showDocumentSuggestions(this.value);
             });
         }
 
@@ -1283,22 +1114,39 @@
                 priority: priority,
                 status: status,
                 details: details,
-                reference: reference,
+                reference: reference || `REF-${Date.now().toString().slice(-6)}`,
                 category: category,
                 createdAt: editingId ? observations.find(o => o.id === editingId).createdAt : new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-                formattedDate: formatDate(new Date())
+                formattedDate: formatDate(new Date()),
+                isNew: !editingId // Marcar como nuevo si no es edición
             };
             
             if (editingId) {
                 // Actualizar observación existente
                 const index = observations.findIndex(o => o.id === editingId);
                 observations[index] = observation;
-                showNotification('Observación actualizada correctamente', 'success');
+                showNotification('✅ Observación actualizada correctamente', 'success');
             } else {
                 // Nueva observación
+                observation.id = Date.now();
+                observation.isNew = true;
                 observations.unshift(observation);
-                showNotification('Observación guardada correctamente', 'success');
+                
+                // Actualizar siguiente referencia
+                if (reference && /^\d+$/.test(reference)) {
+                    nextReference = Math.max(nextReference, parseInt(reference) + 1);
+                }
+                
+                showNotification('✅ Observación guardada correctamente', 'success');
+                
+                // Mostrar animación de nueva observación
+                setTimeout(() => {
+                    const newCard = document.querySelector('.observation-card.new');
+                    if (newCard) {
+                        newCard.classList.remove('new');
+                    }
+                }, 1000);
             }
             
             // Guardar en localStorage
@@ -1306,8 +1154,21 @@
             
             // Actualizar UI
             clearForm();
-            updateUI();
+            updateAll();
             filterObservations();
+            
+            // Scroll a la lista si es nueva observación
+            if (!editingId) {
+                setTimeout(() => {
+                    document.getElementById('observations-list').scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 100);
+            }
+            
+            // Generar nueva referencia
+            generateReference();
         }
 
         function editObservation(id) {
@@ -1340,13 +1201,26 @@
                 }
             });
             
+            // Actualizar contador de caracteres
+            document.getElementById('char-count').textContent = 
+                `${observation.details.length} caracteres`;
+            
             // Cambiar título del formulario
-            document.querySelector('#observation-form .form-header h3').textContent = 'Editar Observación';
+            document.getElementById('form-title').textContent = 'Editar Observación';
+            document.getElementById('form-status').innerHTML = '<i class="fas fa-edit"></i> Modo: Edición';
+            
+            // Mostrar botón cancelar
+            document.getElementById('cancel-edit-btn').style.display = 'inline-flex';
             
             // Scroll al formulario
             scrollToForm();
             
-            showNotification('Modo edición activado', 'info');
+            showNotification('✏️ Modo edición activado', 'info');
+        }
+
+        function cancelEdit() {
+            clearForm();
+            showNotification('Edición cancelada', 'info');
         }
 
         function deleteObservation(id) {
@@ -1356,9 +1230,9 @@
             
             observations = observations.filter(o => o.id !== id);
             saveObservations();
-            updateUI();
+            updateAll();
             filterObservations();
-            showNotification('Observación eliminada', 'success');
+            showNotification('🗑️ Observación eliminada', 'success');
         }
 
         function updateStatus(id, newStatus) {
@@ -1367,17 +1241,25 @@
                 observation.status = newStatus;
                 observation.updatedAt = new Date().toISOString();
                 saveObservations();
-                updateUI();
+                updateAll();
                 filterObservations();
-                showNotification('Estado actualizado', 'success');
+                showNotification('🔄 Estado actualizado', 'success');
             }
         }
 
         function clearForm() {
             editingId = null;
-            document.getElementById('observation-form').reset();
+            
+            // Resetear formulario
+            document.getElementById('document-name').value = '';
+            document.getElementById('observation-title').value = '';
+            document.getElementById('observation-details').value = '';
+            document.getElementById('observation-reference').value = '';
+            
+            // Resetear valores por defecto
             document.getElementById('priority').value = 'medium';
             document.getElementById('status').value = 'pending';
+            document.getElementById('observation-category').value = 'plano';
             
             // Restaurar selectores UI
             document.querySelectorAll('.priority-option').forEach(o => {
@@ -1394,19 +1276,61 @@
                 }
             });
             
-            document.querySelector('#observation-form .form-header h3').textContent = 'Nueva Observación / Corrección';
+            // Restaurar título y estado del formulario
+            document.getElementById('form-title').textContent = 'Nueva Observación / Corrección';
+            document.getElementById('form-status').innerHTML = '<i class="fas fa-pen"></i> Modo: Nuevo';
+            
+            // Ocultar botón cancelar
+            document.getElementById('cancel-edit-btn').style.display = 'none';
+            
+            // Actualizar contadores
+            document.getElementById('char-count').textContent = '0 caracteres';
+            document.getElementById('doc-count').textContent = '';
+            document.getElementById('document-suggestions').innerHTML = '';
+            
+            // Generar nueva referencia
+            generateReference();
+            
+            // Focus en el primer campo
+            document.getElementById('document-name').focus();
+        }
+
+        function generateReference() {
+            calculateNextReference();
+            document.getElementById('observation-reference').value = nextReference.toString();
+        }
+
+        function calculateNextReference() {
+            // Encontrar el número de referencia más alto
+            let maxRef = 0;
+            observations.forEach(obs => {
+                if (obs.reference && /^\d+$/.test(obs.reference)) {
+                    const refNum = parseInt(obs.reference);
+                    if (refNum > maxRef) {
+                        maxRef = refNum;
+                    }
+                }
+            });
+            nextReference = maxRef + 1;
         }
 
         function loadObservations() {
-            const saved = localStorage.getItem('professionalCorrections');
+            const saved = localStorage.getItem('dynamicCorrections');
             if (saved) {
                 observations = JSON.parse(saved);
             }
-            updateDocumentFilter();
         }
 
         function saveObservations() {
-            localStorage.setItem('professionalCorrections', JSON.stringify(observations));
+            localStorage.setItem('dynamicCorrections', JSON.stringify(observations));
+            lastUpdateTime = Date.now();
+        }
+
+        function updateAll() {
+            updateUI();
+            updateDocumentFilter();
+            updateRecentDocuments();
+            updateLastUpdateTime();
         }
 
         function updateUI() {
@@ -1416,39 +1340,124 @@
             const highPriority = observations.filter(o => o.priority === 'high').length;
             const documents = [...new Set(observations.map(o => o.document))].length;
             
-            document.getElementById('total-observations').textContent = total;
-            document.getElementById('pending-count').textContent = pending;
-            document.getElementById('high-priority-count').textContent = highPriority;
-            document.getElementById('documents-count').textContent = documents;
+            // Animar cambios en estadísticas
+            animateStatChange('total-observations', total);
+            animateStatChange('pending-count', pending);
+            animateStatChange('high-priority-count', highPriority);
+            animateStatChange('documents-count', documents);
             
             updateDocumentFilter();
         }
 
+        function animateStatChange(statId, newValue) {
+            const element = document.getElementById(statId);
+            const currentValue = parseInt(element.textContent) || 0;
+            
+            if (currentValue !== newValue) {
+                // Animación de cambio
+                element.classList.add('updated');
+                element.textContent = newValue;
+                
+                // Resaltar tarjeta
+                const statCard = element.closest('.stat-card');
+                statCard.classList.add('updated');
+                
+                // Remover clases después de animación
+                setTimeout(() => {
+                    element.classList.remove('updated');
+                    statCard.classList.remove('updated');
+                }, 2000);
+            } else {
+                element.textContent = newValue;
+            }
+        }
+
+        function updateStatsAnimation() {
+            // Simular actualización periódica de estadísticas
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.classList.add('updated');
+                setTimeout(() => card.classList.remove('updated'), 1000);
+            });
+        }
+
         function updateDocumentFilter() {
-            const select = document.getElementById('filter-document');
-            const currentValue = select.value;
+            const uniqueDocs = [...new Set(observations.map(o => o.document))];
             
-            // Obtener documentos únicos
-            const documents = ['all', ...new Set(observations.map(o => o.document))];
+            // Actualizar contador en formulario
+            const docCount = document.getElementById('doc-count');
+            if (uniqueDocs.length > 0) {
+                docCount.textContent = `${uniqueDocs.length} documentos registrados`;
+            } else {
+                docCount.textContent = '';
+            }
+        }
+
+        function updateRecentDocuments() {
+            const container = document.getElementById('recent-documents-list');
+            const uniqueDocs = [...new Set(observations.map(o => o.document))];
             
-            // Limpiar opciones
-            select.innerHTML = '';
+            if (uniqueDocs.length === 0) {
+                container.innerHTML = `
+                    <p style="text-align: center; color: var(--gray); padding: 10px; font-size: 0.9rem;">
+                        No hay documentos aún
+                    </p>
+                `;
+                return;
+            }
             
-            // Agregar opciones
-            documents.forEach(doc => {
-                const option = document.createElement('option');
-                option.value = doc;
-                option.textContent = doc === 'all' ? 'Todos los documentos' : doc;
-                select.appendChild(option);
+            let html = '';
+            uniqueDocs.slice(0, 5).forEach(doc => {
+                const count = observations.filter(o => o.document === doc).length;
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; 
+                          padding: 8px 12px; margin-bottom: 6px; background: var(--light); 
+                          border-radius: 6px; font-size: 0.85rem;">
+                        <span style="color: var(--primary); font-weight: 500;">${doc}</span>
+                        <span style="background: var(--accent); color: white; padding: 2px 8px; 
+                              border-radius: 10px; font-size: 0.75rem;">${count}</span>
+                    </div>
+                `;
             });
             
-            // Restaurar valor anterior si existe
-            if (documents.includes(currentValue)) {
-                select.value = currentValue;
-                currentFilter.document = currentValue;
+            if (uniqueDocs.length > 5) {
+                html += `
+                    <div style="text-align: center; color: var(--gray); padding: 5px; font-size: 0.8rem;">
+                        +${uniqueDocs.length - 5} documentos más
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function showDocumentSuggestions(input) {
+            const container = document.getElementById('document-suggestions');
+            
+            if (!input) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            const suggestions = [...new Set(observations.map(o => o.document))]
+                .filter(doc => doc.toLowerCase().includes(input.toLowerCase()))
+                .slice(0, 3);
+            
+            if (suggestions.length > 0) {
+                container.innerHTML = `
+                    <div style="margin-top: 5px;">
+                        <span style="color: var(--gray);">Sugerencias:</span>
+                        ${suggestions.map(doc => 
+                            `<div style="cursor: pointer; padding: 2px 5px; margin-top: 2px; 
+                                  background: var(--light); border-radius: 3px; font-size: 0.8rem;"
+                               onclick="document.getElementById('document-name').value = '${escapeHtml(doc)}'; 
+                                        this.parentElement.innerHTML = '';">
+                                ${escapeHtml(doc)}
+                            </div>`
+                        ).join('')}
+                    </div>
+                `;
             } else {
-                select.value = 'all';
-                currentFilter.document = 'all';
+                container.innerHTML = '';
             }
         }
 
@@ -1480,6 +1489,10 @@
             }
             
             renderObservations(filtered);
+            
+            // Actualizar contador
+            document.getElementById('observations-count').textContent = 
+                `Mostrando ${filtered.length} de ${observations.length} observaciones`;
         }
 
         function renderObservations(obsList) {
@@ -1500,7 +1513,7 @@
             }
             
             container.innerHTML = obsList.map(obs => `
-                <div class="observation-card ${obs.priority}">
+                <div class="observation-card ${obs.priority} ${obs.isNew ? 'new' : ''}" data-id="${obs.id}">
                     <div class="observation-actions">
                         <div class="action-icon" title="Editar" onclick="editObservation(${obs.id})">
                             <i class="fas fa-edit"></i>
@@ -1543,62 +1556,237 @@
                             </span>
                         </div>
                         <div>
-                            <span class="observation-status status-${obs.status}">
+                            <span class="observation-status status-${obs.status}" 
+                                  onclick="updateStatus(${obs.id}, prompt('Nuevo estado:', '${obs.status}'))"
+                                  title="Click para cambiar estado">
                                 ${getStatusName(obs.status)}
                             </span>
                         </div>
                     </div>
                 </div>
             `).join('');
+            
+            // Remover marca de nuevo después de renderizar
+            setTimeout(() => {
+                obsList.forEach(obs => {
+                    obs.isNew = false;
+                });
+                saveObservations();
+            }, 1000);
         }
 
         function formatObservationDetails(details) {
-            // Convertir viñetas en HTML
             let formatted = escapeHtml(details);
-            
-            // Reemplazar viñetas con listas HTML
             formatted = formatted.replace(/^[•\-\*]\s*(.+)$/gm, '<li>$1</li>');
             
-            // Si hay li elementos, envolver en ul
             if (formatted.includes('<li>')) {
                 formatted = formatted.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
             }
             
-            // Mantener saltos de línea
             formatted = formatted.replace(/\n/g, '<br>');
-            
             return formatted;
         }
 
-        function resetFilters() {
-            currentFilter = {
-                priority: 'all',
-                status: 'all',
-                document: 'all',
-                search: ''
-            };
-            
-            document.getElementById('filter-priority').value = 'all';
-            document.getElementById('filter-status').value = 'all';
-            document.getElementById('filter-document').value = 'all';
-            document.getElementById('search-observations').value = '';
-            
+        function refreshData() {
+            loadObservations();
+            updateAll();
             filterObservations();
+            showNotification('🔄 Datos actualizados', 'success');
         }
 
-        function clearCompletedObservations() {
-            if (!confirm('¿Eliminar todas las observaciones completadas?')) {
-                return;
+        function updateLastUpdateTime() {
+            const elapsed = Math.floor((Date.now() - lastUpdateTime) / 1000);
+            let text;
+            
+            if (elapsed < 60) {
+                text = `Actualizado hace ${elapsed} segundos`;
+            } else if (elapsed < 3600) {
+                const minutes = Math.floor(elapsed / 60);
+                text = `Actualizado hace ${minutes} minuto${minutes !== 1 ? 's' : ''}`;
+            } else {
+                const hours = Math.floor(elapsed / 3600);
+                text = `Actualizado hace ${hours} hora${hours !== 1 ? 's' : ''}`;
             }
             
-            const completedCount = observations.filter(o => o.status === 'completed').length;
-            observations = observations.filter(o => o.status !== 'completed');
+            document.getElementById('last-update-time').textContent = text;
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
             
+            // Configuración del reporte
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const margin = 20;
+            let yPos = margin;
+            
+            // Título
+            doc.setFontSize(20);
+            doc.setTextColor(26, 54, 93);
+            doc.text('REPORTE DE OBSERVACIONES', pageWidth / 2, yPos, { align: 'center' });
+            yPos += 15;
+            
+            // Fecha
+            doc.setFontSize(11);
+            doc.setTextColor(113, 128, 150);
+            doc.text(`Generado: ${new Date().toLocaleDateString('es-ES')}`, pageWidth / 2, yPos, { align: 'center' });
+            yPos += 20;
+            
+            // Estadísticas
+            doc.setFontSize(12);
+            doc.setTextColor(45, 55, 72);
+            doc.text('RESUMEN ESTADÍSTICO', margin, yPos);
+            yPos += 10;
+            
+            const stats = {
+                total: observations.length,
+                pending: observations.filter(o => o.status === 'pending').length,
+                high: observations.filter(o => o.priority === 'high').length,
+                documents: [...new Set(observations.map(o => o.document))].length
+            };
+            
+            doc.setFontSize(10);
+            doc.text(`• Total observaciones: ${stats.total}`, margin, yPos);
+            yPos += 7;
+            doc.text(`• Pendientes: ${stats.pending}`, margin, yPos);
+            yPos += 7;
+            doc.text(`• Alta prioridad: ${stats.high}`, margin, yPos);
+            yPos += 7;
+            doc.text(`• Documentos: ${stats.documents}`, margin, yPos);
+            yPos += 15;
+            
+            // Observaciones
+            observations.forEach((obs, index) => {
+                if (index > 0 && yPos > 250) {
+                    doc.addPage();
+                    yPos = margin;
+                }
+                
+                doc.setFontSize(14);
+                doc.setTextColor(26, 54, 93);
+                doc.text(`${index + 1}. ${obs.title}`, margin, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(11);
+                doc.setTextColor(49, 130, 206);
+                doc.text(`Documento: ${obs.document}`, margin, yPos);
+                yPos += 7;
+                
+                doc.setFontSize(10);
+                doc.setTextColor(45, 55, 72);
+                
+                const details = obs.details.split('\n');
+                details.forEach(detail => {
+                    const trimmed = detail.trim();
+                    if (trimmed) {
+                        if (yPos > 280) {
+                            doc.addPage();
+                            yPos = margin;
+                        }
+                        
+                        if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
+                            doc.text(`  • ${trimmed.substring(1).trim()}`, margin, yPos);
+                        } else {
+                            doc.text(`  ${trimmed}`, margin, yPos);
+                        }
+                        yPos += 5;
+                    }
+                });
+                
+                yPos += 5;
+                
+                if (obs.reference) {
+                    doc.text(`Referencia: ${obs.reference}`, margin, yPos);
+                    yPos += 6;
+                }
+                
+                doc.setFontSize(9);
+                doc.setTextColor(113, 128, 150);
+                doc.text(`Fecha: ${new Date(obs.createdAt).toLocaleDateString('es-ES')} | Estado: ${getStatusName(obs.status)}`, margin, yPos);
+                yPos += 10;
+                
+                if (index < observations.length - 1) {
+                    doc.setDrawColor(200, 200, 200);
+                    doc.line(margin, yPos, pageWidth - margin, yPos);
+                    yPos += 10;
+                }
+            });
+            
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(113, 128, 150);
+            doc.text(
+                'Sistema Dinámico de Correcciones y Observaciones',
+                pageWidth / 2,
+                doc.internal.pageSize.getHeight() - 10,
+                { align: 'center' }
+            );
+            
+            // Guardar
+            doc.save(`reporte-observaciones-${new Date().toISOString().slice(0,10)}.pdf`);
+            showNotification('📄 Reporte PDF generado', 'success');
+        }
+
+        function addExampleObservation() {
+            const example = {
+                id: Date.now(),
+                document: "TISUR-1502-042-DWG-00001_B",
+                title: "Corrección del NÚMERO DE PLANO PROVEEDOR",
+                priority: "medium",
+                status: "completed",
+                details: "• Se modificó el numero de plano del proveedor\n• De \"006CIV24-1502-042-DWG-00003\"\n• A \"006CIV24-1502-042-DWG-00001\"",
+                reference: "1",
+                category: "plano",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                formattedDate: formatDate(new Date()),
+                isNew: false
+            };
+            
+            observations.push(example);
             saveObservations();
-            updateUI();
-            filterObservations();
+        }
+
+        function showNotification(message, type = 'success') {
+            // Crear notificación dinámica
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 16px 24px;
+                border-radius: 8px;
+                background: white;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                transform: translateX(150%);
+                transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                z-index: 2000;
+            `;
             
-            showNotification(`${completedCount} observaciones completadas eliminadas`, 'success');
+            const icon = document.createElement('div');
+            icon.className = 'notification-icon';
+            icon.innerHTML = '<i class="fas fa-check"></i>';
+            
+            const content = document.createElement('div');
+            content.className = 'notification-content';
+            content.innerHTML = `<h4>${type === 'success' ? 'Éxito' : type === 'error' ? 'Error' : 'Info'}</h4><p>${message}</p>`;
+            
+            notification.appendChild(icon);
+            notification.appendChild(content);
+            document.body.appendChild(notification);
+            
+            // Mostrar
+            setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+            
+            // Ocultar después de 3 segundos
+            setTimeout(() => {
+                notification.style.transform = 'translateX(150%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
         }
 
         function scrollToForm() {
@@ -1608,331 +1796,16 @@
             });
         }
 
-        function generateExport(format) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            // Configuración del reporte
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const margin = 20;
-            let yPos = margin;
-            
-            // Título principal
-            doc.setFontSize(20);
-            doc.setTextColor(26, 54, 93);
-            doc.setFont('helvetica', 'bold');
-            doc.text('OBSERVACIONES REGISTRADAS', pageWidth / 2, yPos, { align: 'center' });
-            yPos += 15;
-            
-            // Subtítulo
-            doc.setFontSize(11);
-            doc.setTextColor(113, 128, 150);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Proyecto: Expediente Técnico | Generado: ${new Date().toLocaleDateString('es-ES')}`, 
-                    pageWidth / 2, yPos, { align: 'center' });
-            yPos += 20;
-            
-            if (format === 'pdf-summary') {
-                generateSummaryPDF(doc, pageWidth, margin, yPos);
-            } else {
-                generateDetailedPDF(doc, pageWidth, margin, yPos);
-            }
-            
-            // Guardar PDF
-            const fileName = `observaciones-${new Date().toISOString().slice(0,10)}.pdf`;
-            doc.save(fileName);
-            
-            // Cerrar modal y mostrar notificación
-            document.getElementById('export-modal').classList.remove('active');
-            showNotification(`Reporte PDF generado: ${fileName}`, 'success');
-        }
-
-        function generateSummaryPDF(doc, pageWidth, margin, yPos) {
-            // Tabla de resumen
-            doc.setFontSize(14);
-            doc.setTextColor(26, 54, 93);
-            doc.setFont('helvetica', 'bold');
-            doc.text('RESUMEN DE OBSERVACIONES', margin, yPos);
-            yPos += 10;
-            
-            // Datos para la tabla de resumen
-            const summaryData = [];
-            
-            // Agrupar por documento
-            const byDocument = {};
-            observations.forEach(obs => {
-                if (!byDocument[obs.document]) {
-                    byDocument[obs.document] = { total: 0, pending: 0, completed: 0 };
-                }
-                byDocument[obs.document].total++;
-                if (obs.status === 'pending' || obs.status === 'in-progress') {
-                    byDocument[obs.document].pending++;
-                } else if (obs.status === 'completed') {
-                    byDocument[obs.document].completed++;
-                }
-            });
-            
-            // Agregar filas a la tabla
-            Object.keys(byDocument).forEach(docName => {
-                const stats = byDocument[docName];
-                summaryData.push([
-                    docName,
-                    stats.total.toString(),
-                    stats.pending.toString(),
-                    stats.completed.toString()
-                ]);
-            });
-            
-            // Crear tabla de resumen
-            doc.autoTable({
-                startY: yPos,
-                head: [['Documento', 'Total', 'Pendientes', 'Completadas']],
-                body: summaryData,
-                margin: { left: margin, right: margin },
-                headStyles: {
-                    fillColor: [26, 54, 93],
-                    textColor: [255, 255, 255],
-                    fontSize: 10,
-                    fontStyle: 'bold'
-                },
-                bodyStyles: {
-                    fontSize: 9
-                },
-                alternateRowStyles: {
-                    fillColor: [247, 250, 252]
-                },
-                didDrawPage: function(data) {
-                    // Footer
-                    addPDFFooter(doc, pageWidth);
-                }
-            });
-            
-            // Obtener posición Y después de la tabla
-            let finalY = doc.lastAutoTable.finalY || yPos;
-            
-            // Espacio después de la tabla
-            finalY += 15;
-            
-            // Lista detallada
-            doc.setFontSize(14);
-            doc.setTextColor(26, 54, 93);
-            doc.setFont('helvetica', 'bold');
-            doc.text('LISTA DE OBSERVACIONES', margin, finalY);
-            finalY += 10;
-            
-            // Agregar cada observación en formato lista
-            doc.setFontSize(10);
-            doc.setTextColor(45, 55, 72);
-            doc.setFont('helvetica', 'normal');
-            
-            observations.forEach((obs, index) => {
-                // Verificar espacio en página
-                if (finalY > 250) {
-                    doc.addPage();
-                    finalY = margin;
-                }
-                
-                // Título de la observación
-                doc.setFont('helvetica', 'bold');
-                doc.text(`${index + 1}. ${obs.title}`, margin, finalY);
-                finalY += 6;
-                
-                // Documento
-                doc.setFont('helvetica', 'normal');
-                doc.text(`Documento: ${obs.document}`, margin + 5, finalY);
-                finalY += 5;
-                
-                // Detalles (con viñetas)
-                const details = obs.details.split('\n');
-                details.forEach(detail => {
-                    const trimmed = detail.trim();
-                    if (trimmed) {
-                        if (finalY > 280) {
-                            doc.addPage();
-                            finalY = margin;
-                        }
-                        
-                        // Detectar viñetas
-                        if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
-                            doc.text(`  • ${trimmed.substring(1).trim()}`, margin + 5, finalY);
-                        } else {
-                            doc.text(`  ${trimmed}`, margin + 5, finalY);
-                        }
-                        finalY += 5;
-                    }
-                });
-                
-                // Referencia
-                if (obs.reference) {
-                    if (finalY > 280) {
-                        doc.addPage();
-                        finalY = margin;
-                    }
-                    doc.text(`Referencia: ${obs.reference}`, margin + 5, finalY);
-                    finalY += 5;
-                }
-                
-                // Estado y fecha
-                if (finalY > 280) {
-                    doc.addPage();
-                    finalY = margin;
-                }
-                doc.text(`Estado: ${getStatusName(obs.status)} | Fecha: ${new Date(obs.createdAt).toLocaleDateString('es-ES')}`, 
-                        margin + 5, finalY);
-                finalY += 10;
-                
-                // Línea separadora
-                if (index < observations.length - 1) {
-                    doc.setDrawColor(200, 200, 200);
-                    doc.line(margin, finalY, pageWidth - margin, finalY);
-                    finalY += 5;
-                }
-            });
-        }
-
-        function generateDetailedPDF(doc, pageWidth, margin, yPos) {
-            // Agregar cada observación con formato de imagen de referencia
-            observations.forEach((obs, index) => {
-                // Verificar si necesitamos nueva página (excepto para la primera)
-                if (index > 0 && yPos > 200) {
-                    doc.addPage();
-                    yPos = margin;
-                }
-                
-                // Título principal de la observación
-                doc.setFontSize(16);
-                doc.setTextColor(26, 54, 93);
-                doc.setFont('helvetica', 'bold');
-                
-                // Dividir título largo
-                const titleLines = doc.splitTextToSize(obs.title, pageWidth - 2 * margin);
-                titleLines.forEach(line => {
-                    doc.text(line, margin, yPos);
-                    yPos += 7;
-                });
-                
-                yPos += 3;
-                
-                // Documento
-                doc.setFontSize(11);
-                doc.setTextColor(49, 130, 206);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`• ${obs.document}`, margin, yPos);
-                yPos += 7;
-                
-                // Detalles con viñetas
-                doc.setFontSize(10);
-                doc.setTextColor(45, 55, 72);
-                doc.setFont('helvetica', 'normal');
-                
-                const details = obs.details.split('\n');
-                details.forEach(detail => {
-                    const trimmed = detail.trim();
-                    if (trimmed) {
-                        // Detectar viñetas
-                        if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
-                            const bulletContent = trimmed.substring(1).trim();
-                            const bulletLines = doc.splitTextToSize(bulletContent, pageWidth - 2 * margin - 10);
-                            bulletLines.forEach((line, lineIndex) => {
-                                const prefix = lineIndex === 0 ? '• ' : '  ';
-                                doc.text(prefix + line, margin + 5, yPos);
-                                yPos += 5;
-                            });
-                        } else {
-                            const detailLines = doc.splitTextToSize(trimmed, pageWidth - 2 * margin - 5);
-                            detailLines.forEach(line => {
-                                doc.text(line, margin + 5, yPos);
-                                yPos += 5;
-                            });
-                        }
-                    }
-                });
-                
-                yPos += 3;
-                
-                // Referencia
-                if (obs.reference) {
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(`Referencia: ${obs.reference}`, margin, yPos);
-                    yPos += 6;
-                }
-                
-                // Información adicional
-                doc.setFontSize(9);
-                doc.setTextColor(113, 128, 150);
-                doc.setFont('helvetica', 'normal');
-                
-                const dateStr = new Date(obs.createdAt).toLocaleDateString('es-ES', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                doc.text(dateStr, margin, yPos);
-                
-                // Categoría y estado alineados a la derecha
-                const statusText = `[${getStatusSymbol(obs.status)}] ${getCategoryName(obs.category)}`;
-                const statusWidth = doc.getTextWidth(statusText);
-                doc.text(statusText, pageWidth - margin - statusWidth, yPos);
-                
-                yPos += 15;
-                
-                // Línea separadora (excepto para la última)
-                if (index < observations.length - 1) {
-                    doc.setDrawColor(200, 200, 200);
-                    doc.line(margin, yPos, pageWidth - margin, yPos);
-                    yPos += 10;
-                }
-            });
-            
-            // Footer
-            addPDFFooter(doc, pageWidth);
-        }
-
-        function addPDFFooter(doc, pageWidth) {
-            const pageHeight = doc.internal.pageSize.getHeight();
-            
-            doc.setFontSize(8);
-            doc.setTextColor(113, 128, 150);
-            doc.text(
-                'Sistema Profesional de Correcciones y Observaciones - Registro Técnico',
-                pageWidth / 2,
-                pageHeight - 10,
-                { align: 'center' }
-            );
-        }
-
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            const title = document.getElementById('notification-title');
-            const msg = document.getElementById('notification-message');
-            const icon = notification.querySelector('.notification-icon i');
-            
-            // Configurar según tipo
-            notification.className = `notification ${type}`;
-            
-            if (type === 'success') {
-                title.textContent = 'Éxito';
-                icon.className = 'fas fa-check';
-            } else if (type === 'error') {
-                title.textContent = 'Error';
-                icon.className = 'fas fa-exclamation-triangle';
-            } else if (type === 'info') {
-                title.textContent = 'Información';
-                icon.className = 'fas fa-info-circle';
-            }
-            
-            msg.textContent = message;
-            
-            // Mostrar
-            notification.classList.add('show');
-            
-            // Ocultar después de 3 segundos
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
 
         function formatDate(date) {
@@ -1948,9 +1821,9 @@
         function getCategoryName(category) {
             const categories = {
                 'plano': 'Plano',
-                'memoria': 'Memoria de Cálculo',
-                'especificacion': 'Especificación Técnica',
-                'documentacion': 'Documentación General',
+                'memoria': 'Memoria',
+                'especificacion': 'Especificación',
+                'documentacion': 'Documentación',
                 'normativa': 'Normativa',
                 'otros': 'Otros'
             };
@@ -1965,16 +1838,6 @@
                 'cancelled': 'Cancelado'
             };
             return statuses[status] || status;
-        }
-
-        function getStatusSymbol(status) {
-            const symbols = {
-                'pending': 'PEND',
-                'in-progress': 'PROG',
-                'completed': 'COMP',
-                'cancelled': 'CANC'
-            };
-            return symbols[status] || status;
         }
 
         function escapeHtml(text) {
