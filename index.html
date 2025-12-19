@@ -618,6 +618,20 @@
             margin-top: 15px;
         }
 
+        .observation-reference {
+            margin-top: 15px;
+            padding: 10px 15px;
+            background: var(--light);
+            border-radius: 6px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .reference-label {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
         /* Empty State */
         .empty-state {
             text-align: center;
@@ -847,6 +861,30 @@
             font-size: 0.9rem;
             color: var(--gray);
         }
+
+        /* Summary Table in PDF */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .summary-table th {
+            background: var(--primary);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .summary-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .summary-table tr:nth-child(even) {
+            background: var(--light);
+        }
     </style>
 </head>
 <body>
@@ -958,12 +996,12 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="document-name"><i class="fas fa-file-alt"></i> Nombre del Documento</label>
-                        <input type="text" id="document-name" placeholder="Ej. Memoria de Cálculo Estructural - Revisión 2.1" required>
+                        <input type="text" id="document-name" placeholder="Ej. TISUR-1502-042-DWG-00001_B" required>
                     </div>
 
                     <div class="form-group">
                         <label for="observation-title"><i class="fas fa-heading"></i> Título de la Observación</label>
-                        <input type="text" id="observation-title" placeholder="Ej. Corrección en cálculo de cargas vivas" required>
+                        <input type="text" id="observation-title" placeholder="Ej. Corrección del NÚMERO DE PLANO PROVEEDOR" required>
                     </div>
 
                     <div class="form-group">
@@ -995,22 +1033,25 @@
 
                     <div class="form-group full-width">
                         <label for="observation-details"><i class="fas fa-align-left"></i> Descripción Detallada</label>
-                        <textarea id="observation-details" placeholder="Describe detalladamente la observación, los cambios necesarios, la justificación técnica, referencias normativas, etc." rows="4" required></textarea>
+                        <textarea id="observation-details" placeholder="Describe detalladamente la observación. Usa viñetas para organizar la información:
+• Primer punto
+• Segundo punto
+• Cambios realizados" rows="4" required></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="observation-reference"><i class="fas fa-link"></i> Referencia (Opcional)</label>
-                        <input type="text" id="observation-reference" placeholder="Ej. Página 45, Sección 3.2.1, Norma E.020">
+                        <label for="observation-reference"><i class="fas fa-hashtag"></i> Referencia (Número)</label>
+                        <input type="text" id="observation-reference" placeholder="Ej. 1, 2, 3...">
                     </div>
 
                     <div class="form-group">
                         <label for="observation-category"><i class="fas fa-tag"></i> Categoría</label>
                         <select id="observation-category">
-                            <option value="estructura">Estructura</option>
-                            <option value="arquitectura">Arquitectura</option>
-                            <option value="instalaciones">Instalaciones</option>
+                            <option value="plano">Plano</option>
+                            <option value="memoria">Memoria de Cálculo</option>
+                            <option value="especificacion">Especificación Técnica</option>
+                            <option value="documentacion">Documentación General</option>
                             <option value="normativa">Normativa</option>
-                            <option value="documentación">Documentación</option>
                             <option value="otros">Otros</option>
                         </select>
                     </div>
@@ -1051,57 +1092,19 @@
                 <button class="close-modal" id="close-export-modal">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom: 20px; color: var(--gray);">Selecciona el formato y opciones para exportar tu registro de observaciones.</p>
+                <p style="margin-bottom: 20px; color: var(--gray);">Selecciona el formato para exportar tu registro de observaciones.</p>
                 
-                <div class="form-group">
-                    <label>Rango de Fechas</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="date" id="export-start-date" style="flex: 1;">
-                        <span>a</span>
-                        <input type="date" id="export-end-date" style="flex: 1;">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Incluir Observaciones</label>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
-                        <label style="display: flex; align-items: center; gap: 5px;">
-                            <input type="checkbox" id="include-pending" checked> Pendientes
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 5px;">
-                            <input type="checkbox" id="include-in-progress" checked> En Progreso
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 5px;">
-                            <input type="checkbox" id="include-completed" checked> Completadas
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 5px;">
-                            <input type="checkbox" id="include-cancelled"> Canceladas
-                        </label>
-                    </div>
-                </div>
-
                 <div class="export-options">
                     <div class="export-option" data-format="pdf-detailed">
                         <i class="fas fa-file-pdf"></i>
                         <h4>PDF Detallado</h4>
-                        <p>Reporte completo con todas las observaciones</p>
+                        <p>Reporte completo con formato profesional</p>
                     </div>
                     <div class="export-option" data-format="pdf-summary">
                         <i class="fas fa-file-contract"></i>
                         <h4>PDF Resumen</h4>
-                        <p>Resumen ejecutivo por prioridad</p>
+                        <p>Tabla resumen y lista de observaciones</p>
                     </div>
-                    <div class="export-option" data-format="excel">
-                        <i class="fas fa-file-excel"></i>
-                        <h4>Excel</h4>
-                        <p>Datos tabulares para análisis</p>
-                    </div>
-                </div>
-
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--light-gray);">
-                    <button class="btn btn-primary" id="generate-export-btn" style="width: 100%;">
-                        <i class="fas fa-download"></i> Generar Reporte
-                    </button>
                 </div>
             </div>
         </div>
@@ -1135,6 +1138,9 @@
             setupEventListeners();
             loadObservations();
             updateUI();
+            
+            // Agregar observación de ejemplo
+            addExampleObservation();
         });
 
         function initializeApp() {
@@ -1148,6 +1154,30 @@
             };
             document.getElementById('current-date').textContent = 
                 now.toLocaleDateString('es-ES', options);
+        }
+
+        function addExampleObservation() {
+            // Solo agregar ejemplo si no hay observaciones
+            if (observations.length > 0) return;
+            
+            const exampleObservation = {
+                id: Date.now(),
+                document: "TISUR-1502-042-DWG-00001_B",
+                title: "Corrección del NÚMERO DE PLANO PROVEEDOR",
+                priority: "medium",
+                status: "completed",
+                details: "Se modificó el numero de plano del proveedor de \"006CIV24-1502-042-DWG-00003\" a \"006CIV24-1502-042-DWG-00001\"",
+                reference: "1",
+                category: "plano",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                formattedDate: formatDate(new Date())
+            };
+            
+            observations.push(exampleObservation);
+            saveObservations();
+            updateUI();
+            filterObservations();
         }
 
         function setupEventListeners() {
@@ -1494,9 +1524,15 @@
                     </div>
                     
                     <div class="observation-content">
-                        ${escapeHtml(obs.details).replace(/\n/g, '<br>')}
-                        ${obs.reference ? `<br><br><strong>Referencia:</strong> ${escapeHtml(obs.reference)}` : ''}
+                        ${formatObservationDetails(obs.details)}
                     </div>
+                    
+                    ${obs.reference ? `
+                    <div class="observation-reference">
+                        <div class="reference-label">Referencia:</div>
+                        <div>${escapeHtml(obs.reference)}</div>
+                    </div>
+                    ` : ''}
                     
                     <div class="observation-meta">
                         <div class="observation-date">
@@ -1507,18 +1543,31 @@
                             </span>
                         </div>
                         <div>
-                            <select class="observation-status status-${obs.status}" 
-                                    onchange="updateStatus(${obs.id}, this.value)"
-                                    style="border: none; background: transparent; color: inherit; font: inherit; cursor: pointer;">
-                                <option value="pending" ${obs.status === 'pending' ? 'selected' : ''}>Pendiente</option>
-                                <option value="in-progress" ${obs.status === 'in-progress' ? 'selected' : ''}>En Progreso</option>
-                                <option value="completed" ${obs.status === 'completed' ? 'selected' : ''}>Completado</option>
-                                <option value="cancelled" ${obs.status === 'cancelled' ? 'selected' : ''}>Cancelado</option>
-                            </select>
+                            <span class="observation-status status-${obs.status}">
+                                ${getStatusName(obs.status)}
+                            </span>
                         </div>
                     </div>
                 </div>
             `).join('');
+        }
+
+        function formatObservationDetails(details) {
+            // Convertir viñetas en HTML
+            let formatted = escapeHtml(details);
+            
+            // Reemplazar viñetas con listas HTML
+            formatted = formatted.replace(/^[•\-\*]\s*(.+)$/gm, '<li>$1</li>');
+            
+            // Si hay li elementos, envolver en ul
+            if (formatted.includes('<li>')) {
+                formatted = formatted.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+            }
+            
+            // Mantener saltos de línea
+            formatted = formatted.replace(/\n/g, '<br>');
+            
+            return formatted;
         }
 
         function resetFilters() {
@@ -1568,112 +1617,291 @@
             const margin = 20;
             let yPos = margin;
             
-            // Título
-            doc.setFontSize(24);
+            // Título principal
+            doc.setFontSize(20);
             doc.setTextColor(26, 54, 93);
-            doc.text('REPORTE DE CORRECCIONES', pageWidth / 2, yPos, { align: 'center' });
+            doc.setFont('helvetica', 'bold');
+            doc.text('OBSERVACIONES REGISTRADAS', pageWidth / 2, yPos, { align: 'center' });
             yPos += 15;
             
-            // Fecha del reporte
+            // Subtítulo
             doc.setFontSize(11);
             doc.setTextColor(113, 128, 150);
-            doc.text(`Generado: ${new Date().toLocaleDateString('es-ES', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            })}`, pageWidth / 2, yPos, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Proyecto: Expediente Técnico | Generado: ${new Date().toLocaleDateString('es-ES')}`, 
+                    pageWidth / 2, yPos, { align: 'center' });
             yPos += 20;
             
-            // Estadísticas
-            doc.setFontSize(12);
-            doc.setTextColor(45, 55, 72);
-            doc.text('RESUMEN ESTADÍSTICO', margin, yPos);
-            yPos += 10;
-            
-            const stats = {
-                total: observations.length,
-                pending: observations.filter(o => o.status === 'pending').length,
-                high: observations.filter(o => o.priority === 'high').length,
-                completed: observations.filter(o => o.status === 'completed').length
-            };
-            
-            doc.setFontSize(10);
-            doc.text(`• Total de observaciones: ${stats.total}`, margin, yPos);
-            yPos += 7;
-            doc.text(`• Pendientes: ${stats.pending}`, margin, yPos);
-            yPos += 7;
-            doc.text(`• Alta prioridad: ${stats.high}`, margin, yPos);
-            yPos += 7;
-            doc.text(`• Completadas: ${stats.completed}`, margin, yPos);
-            yPos += 15;
-            
-            // Tabla de observaciones
-            if (observations.length > 0) {
-                doc.setFontSize(12);
-                doc.setTextColor(45, 55, 72);
-                doc.text('OBSERVACIONES DETALLADAS', margin, yPos);
-                yPos += 10;
-                
-                const tableData = observations.map(obs => [
-                    obs.document.length > 30 ? obs.document.substring(0, 27) + '...' : obs.doc,
-                    obs.title.length > 30 ? obs.title.substring(0, 27) + '...' : obs.title,
-                    obs.priority === 'high' ? 'Alta' : obs.priority === 'medium' ? 'Media' : 'Baja',
-                    obs.status === 'pending' ? 'Pendiente' : 
-                    obs.status === 'in-progress' ? 'En Progreso' :
-                    obs.status === 'completed' ? 'Completado' : 'Cancelado',
-                    new Date(obs.createdAt).toLocaleDateString('es-ES')
-                ]);
-                
-                doc.autoTable({
-                    startY: yPos,
-                    head: [['Documento', 'Título', 'Prioridad', 'Estado', 'Fecha']],
-                    body: tableData,
-                    margin: { left: margin, right: margin },
-                    headStyles: {
-                        fillColor: [26, 54, 93],
-                        textColor: [255, 255, 255],
-                        fontSize: 10
-                    },
-                    bodyStyles: {
-                        fontSize: 9
-                    },
-                    alternateRowStyles: {
-                        fillColor: [247, 250, 252]
-                    },
-                    columnStyles: {
-                        0: { cellWidth: 40 },
-                        1: { cellWidth: 60 },
-                        2: { cellWidth: 25 },
-                        3: { cellWidth: 30 },
-                        4: { cellWidth: 25 }
-                    },
-                    didDrawPage: function(data) {
-                        // Footer
-                        doc.setFontSize(8);
-                        doc.setTextColor(113, 128, 150);
-                        doc.text(
-                            'Sistema Profesional de Correcciones y Observaciones',
-                            pageWidth / 2,
-                            doc.internal.pageSize.getHeight() - 10,
-                            { align: 'center' }
-                        );
-                    }
-                });
+            if (format === 'pdf-summary') {
+                generateSummaryPDF(doc, pageWidth, margin, yPos);
             } else {
-                doc.setFontSize(11);
-                doc.setTextColor(113, 128, 150);
-                doc.text('No hay observaciones registradas', pageWidth / 2, yPos, { align: 'center' });
+                generateDetailedPDF(doc, pageWidth, margin, yPos);
             }
             
             // Guardar PDF
-            doc.save(`reporte-correcciones-${new Date().toISOString().slice(0,10)}.pdf`);
+            const fileName = `observaciones-${new Date().toISOString().slice(0,10)}.pdf`;
+            doc.save(fileName);
             
             // Cerrar modal y mostrar notificación
             document.getElementById('export-modal').classList.remove('active');
-            showNotification('Reporte PDF generado correctamente', 'success');
+            showNotification(`Reporte PDF generado: ${fileName}`, 'success');
+        }
+
+        function generateSummaryPDF(doc, pageWidth, margin, yPos) {
+            // Tabla de resumen
+            doc.setFontSize(14);
+            doc.setTextColor(26, 54, 93);
+            doc.setFont('helvetica', 'bold');
+            doc.text('RESUMEN DE OBSERVACIONES', margin, yPos);
+            yPos += 10;
+            
+            // Datos para la tabla de resumen
+            const summaryData = [];
+            
+            // Agrupar por documento
+            const byDocument = {};
+            observations.forEach(obs => {
+                if (!byDocument[obs.document]) {
+                    byDocument[obs.document] = { total: 0, pending: 0, completed: 0 };
+                }
+                byDocument[obs.document].total++;
+                if (obs.status === 'pending' || obs.status === 'in-progress') {
+                    byDocument[obs.document].pending++;
+                } else if (obs.status === 'completed') {
+                    byDocument[obs.document].completed++;
+                }
+            });
+            
+            // Agregar filas a la tabla
+            Object.keys(byDocument).forEach(docName => {
+                const stats = byDocument[docName];
+                summaryData.push([
+                    docName,
+                    stats.total.toString(),
+                    stats.pending.toString(),
+                    stats.completed.toString()
+                ]);
+            });
+            
+            // Crear tabla de resumen
+            doc.autoTable({
+                startY: yPos,
+                head: [['Documento', 'Total', 'Pendientes', 'Completadas']],
+                body: summaryData,
+                margin: { left: margin, right: margin },
+                headStyles: {
+                    fillColor: [26, 54, 93],
+                    textColor: [255, 255, 255],
+                    fontSize: 10,
+                    fontStyle: 'bold'
+                },
+                bodyStyles: {
+                    fontSize: 9
+                },
+                alternateRowStyles: {
+                    fillColor: [247, 250, 252]
+                },
+                didDrawPage: function(data) {
+                    // Footer
+                    addPDFFooter(doc, pageWidth);
+                }
+            });
+            
+            // Obtener posición Y después de la tabla
+            let finalY = doc.lastAutoTable.finalY || yPos;
+            
+            // Espacio después de la tabla
+            finalY += 15;
+            
+            // Lista detallada
+            doc.setFontSize(14);
+            doc.setTextColor(26, 54, 93);
+            doc.setFont('helvetica', 'bold');
+            doc.text('LISTA DE OBSERVACIONES', margin, finalY);
+            finalY += 10;
+            
+            // Agregar cada observación en formato lista
+            doc.setFontSize(10);
+            doc.setTextColor(45, 55, 72);
+            doc.setFont('helvetica', 'normal');
+            
+            observations.forEach((obs, index) => {
+                // Verificar espacio en página
+                if (finalY > 250) {
+                    doc.addPage();
+                    finalY = margin;
+                }
+                
+                // Título de la observación
+                doc.setFont('helvetica', 'bold');
+                doc.text(`${index + 1}. ${obs.title}`, margin, finalY);
+                finalY += 6;
+                
+                // Documento
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Documento: ${obs.document}`, margin + 5, finalY);
+                finalY += 5;
+                
+                // Detalles (con viñetas)
+                const details = obs.details.split('\n');
+                details.forEach(detail => {
+                    const trimmed = detail.trim();
+                    if (trimmed) {
+                        if (finalY > 280) {
+                            doc.addPage();
+                            finalY = margin;
+                        }
+                        
+                        // Detectar viñetas
+                        if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
+                            doc.text(`  • ${trimmed.substring(1).trim()}`, margin + 5, finalY);
+                        } else {
+                            doc.text(`  ${trimmed}`, margin + 5, finalY);
+                        }
+                        finalY += 5;
+                    }
+                });
+                
+                // Referencia
+                if (obs.reference) {
+                    if (finalY > 280) {
+                        doc.addPage();
+                        finalY = margin;
+                    }
+                    doc.text(`Referencia: ${obs.reference}`, margin + 5, finalY);
+                    finalY += 5;
+                }
+                
+                // Estado y fecha
+                if (finalY > 280) {
+                    doc.addPage();
+                    finalY = margin;
+                }
+                doc.text(`Estado: ${getStatusName(obs.status)} | Fecha: ${new Date(obs.createdAt).toLocaleDateString('es-ES')}`, 
+                        margin + 5, finalY);
+                finalY += 10;
+                
+                // Línea separadora
+                if (index < observations.length - 1) {
+                    doc.setDrawColor(200, 200, 200);
+                    doc.line(margin, finalY, pageWidth - margin, finalY);
+                    finalY += 5;
+                }
+            });
+        }
+
+        function generateDetailedPDF(doc, pageWidth, margin, yPos) {
+            // Agregar cada observación con formato de imagen de referencia
+            observations.forEach((obs, index) => {
+                // Verificar si necesitamos nueva página (excepto para la primera)
+                if (index > 0 && yPos > 200) {
+                    doc.addPage();
+                    yPos = margin;
+                }
+                
+                // Título principal de la observación
+                doc.setFontSize(16);
+                doc.setTextColor(26, 54, 93);
+                doc.setFont('helvetica', 'bold');
+                
+                // Dividir título largo
+                const titleLines = doc.splitTextToSize(obs.title, pageWidth - 2 * margin);
+                titleLines.forEach(line => {
+                    doc.text(line, margin, yPos);
+                    yPos += 7;
+                });
+                
+                yPos += 3;
+                
+                // Documento
+                doc.setFontSize(11);
+                doc.setTextColor(49, 130, 206);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`• ${obs.document}`, margin, yPos);
+                yPos += 7;
+                
+                // Detalles con viñetas
+                doc.setFontSize(10);
+                doc.setTextColor(45, 55, 72);
+                doc.setFont('helvetica', 'normal');
+                
+                const details = obs.details.split('\n');
+                details.forEach(detail => {
+                    const trimmed = detail.trim();
+                    if (trimmed) {
+                        // Detectar viñetas
+                        if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
+                            const bulletContent = trimmed.substring(1).trim();
+                            const bulletLines = doc.splitTextToSize(bulletContent, pageWidth - 2 * margin - 10);
+                            bulletLines.forEach((line, lineIndex) => {
+                                const prefix = lineIndex === 0 ? '• ' : '  ';
+                                doc.text(prefix + line, margin + 5, yPos);
+                                yPos += 5;
+                            });
+                        } else {
+                            const detailLines = doc.splitTextToSize(trimmed, pageWidth - 2 * margin - 5);
+                            detailLines.forEach(line => {
+                                doc.text(line, margin + 5, yPos);
+                                yPos += 5;
+                            });
+                        }
+                    }
+                });
+                
+                yPos += 3;
+                
+                // Referencia
+                if (obs.reference) {
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`Referencia: ${obs.reference}`, margin, yPos);
+                    yPos += 6;
+                }
+                
+                // Información adicional
+                doc.setFontSize(9);
+                doc.setTextColor(113, 128, 150);
+                doc.setFont('helvetica', 'normal');
+                
+                const dateStr = new Date(obs.createdAt).toLocaleDateString('es-ES', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                doc.text(dateStr, margin, yPos);
+                
+                // Categoría y estado alineados a la derecha
+                const statusText = `[${getStatusSymbol(obs.status)}] ${getCategoryName(obs.category)}`;
+                const statusWidth = doc.getTextWidth(statusText);
+                doc.text(statusText, pageWidth - margin - statusWidth, yPos);
+                
+                yPos += 15;
+                
+                // Línea separadora (excepto para la última)
+                if (index < observations.length - 1) {
+                    doc.setDrawColor(200, 200, 200);
+                    doc.line(margin, yPos, pageWidth - margin, yPos);
+                    yPos += 10;
+                }
+            });
+            
+            // Footer
+            addPDFFooter(doc, pageWidth);
+        }
+
+        function addPDFFooter(doc, pageWidth) {
+            const pageHeight = doc.internal.pageSize.getHeight();
+            
+            doc.setFontSize(8);
+            doc.setTextColor(113, 128, 150);
+            doc.text(
+                'Sistema Profesional de Correcciones y Observaciones - Registro Técnico',
+                pageWidth / 2,
+                pageHeight - 10,
+                { align: 'center' }
+            );
         }
 
         function showNotification(message, type = 'success') {
@@ -1719,14 +1947,34 @@
 
         function getCategoryName(category) {
             const categories = {
-                'estructura': 'Estructura',
-                'arquitectura': 'Arquitectura',
-                'instalaciones': 'Instalaciones',
+                'plano': 'Plano',
+                'memoria': 'Memoria de Cálculo',
+                'especificacion': 'Especificación Técnica',
+                'documentacion': 'Documentación General',
                 'normativa': 'Normativa',
-                'documentación': 'Documentación',
                 'otros': 'Otros'
             };
             return categories[category] || category;
+        }
+
+        function getStatusName(status) {
+            const statuses = {
+                'pending': 'Pendiente',
+                'in-progress': 'En Progreso',
+                'completed': 'Completado',
+                'cancelled': 'Cancelado'
+            };
+            return statuses[status] || status;
+        }
+
+        function getStatusSymbol(status) {
+            const symbols = {
+                'pending': 'PEND',
+                'in-progress': 'PROG',
+                'completed': 'COMP',
+                'cancelled': 'CANC'
+            };
+            return symbols[status] || status;
         }
 
         function escapeHtml(text) {
