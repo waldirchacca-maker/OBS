@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Colaborativo - Expediente Técnico</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <style>
+        :root {
+            --primary: #2C3E50;
+            --secondary: #3498DB;
+            --accent: #1ABC9C;
+            --light: #F8F9FA;
+            --dark: #2C3E50;
+            --gray: #95A5A6;
+            --success: #27AE60;
+            --warning: #F39C12;
+            --danger: #E74C3C;
+            --shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+            --user1: #3498DB;
+            --user2: #9B59B6;
+            --user3: #2ECC71;
+            --user4: #E67E22;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Pantalla de Login */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+        }
+        
+        .login-card {
+            background-color: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+        
+        .login-icon {
+            font-size: 4rem;
+            color: var(--secondary);
+            margin-bottom: 20px;
+        }
+        
+        .login-title {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .login-subtitle {
+            color: var(--gray);
+            margin-bottom: 30px;
+        }
+        
+        /* Resto de estilos (similares al anterior pero mejorados) */
+        header {
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 25px 30px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo i {
+            font-size: 2.5rem;
+            color: var(--accent);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: white;
+        }
+        
+        .user-name {
+            font-weight: 600;
+        }
+        
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: 600;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .online-users {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .online-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .user-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .stats {
+            display: flex;
+            gap: 25px;
+            text-align: center;
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px 25px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light);
+            color: var(--primary);
+        }
+        
+        .card-title i {
+            color: var(--accent);
+            font-size: 1.5rem;
+        }
+        
+        h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background-color: #f9f9f9;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--secondary);
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .priority-select {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .priority-option {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .priority-option:hover {
+            transform: translateY(-3px);
+        }
+        
+        .priority-option.selected {
+            border-width: 2px;
+        }
+        
+        .low { border-color: var(--success); color: var(--success); }
+        .medium { border-color: var(--warning); color: var(--warning); }
+        .high { border-color: var(--danger); color: var(--danger); }
+        
+        .low.selected { background-color: rgba(39, 174, 96, 0.1); }
+        .medium.selected { background-color: rgba(243, 156, 18, 0.1); }
+        .high.selected { background-color: rgba(231, 76, 60, 0.1); }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-secondary {
+            background-color: var(--light);
+            color: var(--primary);
+            border: 2px solid #e0e0e0;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e9ecef;
+        }
+        
+        .btn-full {
+            width: 100%;
+        }
+        
+        .observations-container {
+            grid-column: span 2;
+        }
+        
+        .observations-list {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .observation-item {
+            background-color: white;
+            border-left: 5px solid var(--secondary);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .observation-item:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .observation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .observation-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        .observation-doc {
+            color: var(--secondary);
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .observation-priority {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .priority-low { background-color: rgba(39, 174, 96, 0.15); color: var(--success); }
+        .priority-medium { background-color: rgba(243, 156, 18, 0.15); color: var(--warning); }
+        .priority-high { background-color: rgba(231, 76, 60, 0.15); color: var(--danger); }
+        
+        .observation-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        .observation-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        
+        .user-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .observation-content {
+            line-height: 1.6;
+            color: #555;
+            margin-top: 15px;
+        }
+        
+        .observation-actions {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .observation-item:hover .observation-actions {
+            opacity: 1;
+        }
+        
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .action-btn:hover {
+            background-color: var(--secondary);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray);
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+        
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--gray);
+        }
+        
+        .filters {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .filter-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            background-color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn.active {
+            background-color: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+        
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 300px;
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+        
+        .search-box input {
+            padding-left: 45px;
+        }
+        
+        .chat-container {
+            margin-top: 30px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 20px;
+        }
+        
+        .chat-messages {
+            height: 200px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        
+        .message-sent {
+            background-color: var(--secondary);
+            color: white;
+            margin-left: auto;
+        }
+        
+        .message-received {
+            background-color: #e9ecef;
+            color: var(--dark);
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+        
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 30px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .observations-container {
+                grid-column: span 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+                gap: 25px;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .stats {
+                width: 100%;
+                justify-content: space-around;
+            }
+            
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                justify-content: center;
+            }
+            
+            .search-box {
+                max-width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .card {
+                padding: 20px;
+            }
+            
+            .priority-select {
+                flex-direction: column;
+            }
+            
+            .stat-box {
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Pantalla de Login -->
+    <div id="login-screen" class="login-container">
+        <div class="login-card">
+            <div class="login-icon">
+                <i class="fas fa-users-cog"></i>
+            </div>
+            <h1 class="login-title">Expediente Colaborativo</h1>
+            <p class="login-subtitle">Trabaje en equipo en tiempo real</p>
+            
+            <div class="form-group">
+                <label for="username">Nombre de Usuario</label>
+                <input type="text" id="username" placeholder="Ingrese su nombre" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="project-code">Código del Proyecto</label>
+                <input type="text" id="project-code" placeholder="Ej: OBRA-2024-001" value="OBRA-2024-001">
+                <small style="color: var(--gray); display: block; margin-top: 5px;">Todos los usuarios con el mismo código verán los mismos datos</small>
+            </div>
+            
+            <button id="login-btn" class="btn btn-primary btn-full">
+                <i class="fas fa-sign-in-alt"></i> Ingresar al Sistema
+            </button>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <h3 style="margin-bottom: 15px; color: var(--primary);">¿Cómo funciona?</h3>
+                <ul style="text-align: left; color: var(--gray);">
+                    <li style="margin-bottom: 8px;"><i class="fas fa-sync-alt" style="color: var(--accent); margin-right: 8px;"></i> Datos sincronizados en tiempo real</li>
+                    <li style="margin-bottom: 8px;"><i class="fas fa-user-friends" style="color: var(--accent); margin-right: 8px;"></i> Vea quién más está en línea</li>
+                    <li style="margin-bottom: 8px;"><i class="fas fa-comments" style="color: var(--accent); margin-right: 8px;"></i> Chat integrado para discusiones</li>
+                    <li><i class="fas fa-history" style="color: var(--accent); margin-right: 8px;"></i> Historial completo de cambios</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Aplicación principal (oculta inicialmente) -->
+    <div id="app-container" class="container" style="display: none;">
+        <header>
+            <div class="logo">
+                <i class="fas fa-clipboard-check"></i>
+                <div>
+                    <h1>Expediente Técnico</h1>
+                    <p class="subtitle">Sistema colaborativo de observaciones</p>
+                    <div class="online-users" id="online-users">
+                        <!-- Usuarios en línea se mostrarán aquí -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="user-info">
+                <div>
+                    <div class="user-name" id="current-user-name">Usuario</div>
+                    <div class="project-code" id="current-project" style="font-size: 0.9rem; opacity: 0.9;"></div>
+                </div>
+                <div class="user-avatar" id="user-avatar" style="background-color: var(--user1);">U</div>
+                <button class="logout-btn" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
+            </div>
+        </header>
+        
+        <div class="content">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-file-alt"></i>
+                    <h2>Registrar Nueva Observación</h2>
+                </div>
+                
+                <form id="observation-form">
+                    <div class="form-group">
+                        <label for="document-name"><i class="fas fa-file-signature"></i> Nombre del Documento</label>
+                        <input type="text" id="document-name" placeholder="Ej. Memoria de Cálculo Estructural" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="observation-name"><i class="fas fa-heading"></i> Título de la Observación</label>
+                        <input type="text" id="observation-name" placeholder="Ej. Corrección en cálculo de carga viva" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-exclamation-triangle"></i> Prioridad</label>
+                        <div class="priority-select">
+                            <div class="priority-option low" data-priority="low">Baja</div>
+                            <div class="priority-option medium selected" data-priority="medium">Media</div>
+                            <div class="priority-option high" data-priority="high">Alta</div>
+                        </div>
+                        <input type="hidden" id="priority" value="medium" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="observation-details"><i class="fas fa-edit"></i> Detalles de la Observación</label>
+                        <textarea id="observation-details" placeholder="Describe detalladamente la observación, los cambios necesarios, las mejoras propuestas, etc." required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <i class="fas fa-save"></i> Guardar Observación
+                    </button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-chart-bar"></i>
+                    <h2>Resumen del Proyecto</h2>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-filter"></i> Filtros</label>
+                    <div class="filters">
+                        <div class="filter-group">
+                            <button class="filter-btn active" data-filter="all">Todas</button>
+                            <button class="filter-btn" data-filter="low">Baja</button>
+                            <button class="filter-btn" data-filter="medium">Media</button>
+                            <button class="filter-btn" data-filter="high">Alta</button>
+                        </div>
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="search-input" placeholder="Buscar observaciones...">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-users"></i> Colaboradores en línea</label>
+                    <div id="online-list" style="padding: 10px; background-color: #f8f9fa; border-radius: 8px; min-height: 60px;">
+                        <p style="text-align: center; color: var(--gray);">Cargando...</p>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-history"></i> Actividad Reciente</label>
+                    <div id="recent-activity" style="padding: 10px; background-color: #f8f9fa; border-radius: 8px; min-height: 60px;">
+                        <p style="text-align: center; color: var(--gray);">No hay actividad reciente</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card observations-container">
+                <div class="card-title">
+                    <i class="fas fa-list-check"></i>
+                    <h2>Observaciones del Proyecto</h2>
+                    <span class="sync-status" id="sync-status" style="margin-left: auto; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-circle" style="color: var(--success);"></i>
+                        <span>Sincronizado</span>
+                    </span>
+                </div>
+                
+                <div class="observations-list" id="observations-list">
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <h3>No hay observaciones registradas</h3>
+                        <p>Comienza agregando tu primera observación utilizando el formulario</p>
+                    </div>
+                </div>
+                
+                <div class="chat-container">
+                    <h3 style="margin-bottom: 15px; color: var(--primary);">
+                        <i class="fas fa-comments"></i> Chat del Proyecto
+                    </h3>
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-message message-received">
+                            <div class="message-header">
+                                <span>Sistema</span>
+                                <span>Ahora</span>
+                            </div>
+                            Bienvenido al chat del proyecto. ¡Comienza a conversar con tu equipo!
+                        </div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="chat-input" placeholder="Escribe un mensaje...">
+                        <button class="btn btn-primary" id="send-chat-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Sistema Colaborativo de Expedientes Técnicos &copy; <span id="current-year">2024</span></p>
+            <p>Datos sincronizados en tiempo real con todos los colaboradores</p>
+        </footer>
+    </div>
+
+    <script>
+        // Configuración de Firebase (usa tu propia configuración)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBkD8q7Q9X6Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8",
+            authDomain: "expedientes-tecnicos.firebaseapp.com",
+            projectId: "expedientes-tecnicos",
+            storageBucket: "expedientes-tecnicos.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890"
+        };
+        
+        // Variables globales
+        let currentUser = null;
+        let currentProject = null;
+        let observations = [];
+        let onlineUsers = [];
+        let chatMessages = [];
+        let currentFilter = 'all';
+        let currentSearch = '';
+        let userColors = {};
+        
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            // Establecer año actual en el footer
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+            
+            // Inicializar Firebase (versión simulada para este ejemplo)
+            // En una implementación real, inicializarías Firebase aquí
+            console.log("Firebase configurado (simulación para el ejemplo)");
+            
+            // Configurar eventos del login
+            setupLoginEvents();
+            
+            // Configurar eventos de la aplicación
+            setupAppEvents();
+        });
+        
+        // Configurar eventos del login
+        function setupLoginEvents() {
+            document.getElementById('login-btn').addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value.trim();
+                const projectCode = document.getElementById('project-code').value.trim();
+                
+                if (!username) {
+                    showNotification('Por favor ingresa tu nombre de usuario', 'warning');
+                    return;
+                }
+                
+                if (!projectCode) {
+                    showNotification('Por favor ingresa un código de proyecto', 'warning');
+                    return;
+                }
+                
+                // Simular login exitoso
+                loginUser(username, projectCode);
+            });
+            
+            // Permitir login con Enter
+            document.getElementById('username').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('login-btn').click();
+                }
+            });
+            
+            document.getElementById('project-code').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('login-btn').click();
+                }
+            });
+        }
+        
+        // Configurar eventos de la aplicación
+        function setupAppEvents() {
+            // Formulario de nueva observación
+            document.getElementById('observation-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addNewObservation();
+            });
+            
+            // Selectores de prioridad
+            document.querySelectorAll('.priority-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    document.getElementById('priority').value = this.dataset.priority;
+                });
+            });
+            
+            // Filtros
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.dataset.filter;
+                    renderObservations();
+                });
+            });
+            
+            // Búsqueda
+            document.getElementById('search-input').addEventListener('input', function() {
+                currentSearch = this.value.toLowerCase();
+                renderObservations();
+            });
+            
+            // Chat
+            document.getElementById('send-chat-btn').addEventListener('click', sendChatMessage);
+            document.getElementById('chat-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+            
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', logoutUser);
+        }
+        
+        // Iniciar sesión del usuario
+        function loginUser(username, projectCode) {
+            // Crear objeto de usuario
+            currentUser = {
+                id: generateUserId(),
+                name: username,
+                project: projectCode,
+                lastActive: new Date().toISOString(),
+                color: getUserColor(username)
+            };
+            
+            currentProject = projectCode;
+            
+            // Simular conexión a Firebase
+            console.log(`Usuario ${username} conectado al proyecto ${projectCode}`);
+            
+            // Mostrar aplicación y ocultar login
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+            
+            // Actualizar interfaz con datos del usuario
+            document.getElementById('current-user-name').textContent = currentUser.name;
+            document.getElementById('current-project').textContent = `Proyecto: ${currentProject}`;
+            document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+            document.getElementById('user-avatar').style.backgroundColor = currentUser.color;
+            
+            // Simular conexión con otros usuarios
+            simulateOnlineUsers();
+            
+            // Cargar datos del proyecto (en una implementación real, esto vendría de Firebase)
+            loadProjectData();
+            
+            // Iniciar sincronización en tiempo real (simulada)
+            startRealtimeSync();
+            
+            // Mostrar notificación de bienvenida
+            showNotification(`Bienvenido ${username}! Conectado al proyecto ${projectCode}`, 'success');
+            
+            // Enviar mensaje de sistema al chat
+            addSystemMessage(`${username} se ha unido al proyecto`);
+        }
+        
+        // Cerrar sesión del usuario
+        function logoutUser() {
+            // En una implementación real, aquí notificarías a Firebase
+            addSystemMessage(`${currentUser.name} ha abandonado el proyecto`);
+            
+            // Limpiar datos
+            currentUser = null;
+            currentProject = null;
+            observations = [];
+            onlineUsers = [];
+            
+            // Mostrar login y ocultar aplicación
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            
+            // Limpiar formularios
+            document.getElementById('username').value = '';
+            document.getElementById('project-code').value = 'OBRA-2024-001';
+            
+            showNotification('Sesión cerrada exitosamente', 'success');
+        }
+        
+        // Cargar datos del proyecto
+        function loadProjectData() {
+            // En una implementación real, cargarías desde Firebase
+            // Por ahora usamos datos de ejemplo
+            const exampleObservations = [
+                {
+                    id: 1,
+                    document: "Memoria de Cálculo Estructural",
+                    title: "Corrección en cálculo de carga viva",
+                    priority: "high",
+                    details: "La carga viva considerada no cumple con la norma E.020. Debe aumentarse de 200 kg/m² a 250 kg/m².",
+                    date: new Date(Date.now() - 86400000).toISOString(),
+                    formattedDate: formatDate(new Date(Date.now() - 86400000)),
+                    userId: "user1",
+                    userName: "Ing. Carlos Méndez",
+                    userColor: "#3498DB"
+                },
+                {
+                    id: 2,
+                    document: "Planos Arquitectónicos",
+                    title: "Disposición de ventanas en fachada norte",
+                    priority: "medium",
+                    details: "Revisar dimensiones de ventanas en planta baja. No coinciden con memoria descriptiva.",
+                    date: new Date(Date.now() - 43200000).toISOString(),
+                    formattedDate: formatDate(new Date(Date.now() - 43200000)),
+                    userId: "user2",
+                    userName: "Arq. Ana López",
+                    userColor: "#9B59B6"
+                },
+                {
+                    id: 3,
+                    document: "Especificaciones Técnicas",
+                    title: "Actualizar marca de cemento",
+                    priority: "low",
+                    details: "Cambiar cemento tipo I por tipo IP según nueva disposición del fabricante.",
+                    date: new Date(Date.now() - 7200000).toISOString(),
+                    formattedDate: formatDate(new Date(Date.now() - 7200000)),
+                    userId: "user3",
+                    userName: "Téc. Roberto Sánchez",
+                    userColor: "#2ECC71"
+                }
+            ];
+            
+            observations = exampleObservations;
+            
+            // Cargar mensajes de chat de ejemplo
+            const exampleChat = [
+                {
+                    id: 1,
+                    userId: "user1",
+                    userName: "Ing. Carlos Méndez",
+                    userColor: "#3498DB",
+                    message: "Hola equipo, ya revisé los planos estructurales.",
+                    timestamp: new Date(Date.now() - 3600000).toISOString(),
+                    formattedTime: formatTime(new Date(Date.now() - 3600000))
+                },
+                {
+                    id: 2,
+                    userId: "user2",
+                    userName: "Arq. Ana López",
+                    userColor: "#9B59B6",
+                    message: "Voy a revisar las observaciones de arquitectura esta tarde.",
+                    timestamp: new Date(Date.now() - 1800000).toISOString(),
+                    formattedTime: formatTime(new Date(Date.now() - 1800000))
+                },
+                {
+                    id: 3,
+                    userId: "system",
+                    userName: "Sistema",
+                    userColor: "#95A5A6",
+                    message: "Bienvenidos al sistema colaborativo de expedientes técnicos",
+                    timestamp: new Date(Date.now() - 86400000).toISOString(),
+                    formattedTime: formatTime(new Date(Date.now() - 86400000))
+                }
+            ];
+            
+            chatMessages = exampleChat;
+            
+            // Actualizar interfaz
+            updateStats();
+            renderObservations();
+            renderChat();
+            updateRecentActivity();
+        }
+        
+        // Simular usuarios en línea
+        function simulateOnlineUsers() {
+            // En una implementación real, esto vendría de Firebase
+            onlineUsers = [
+                { id: "user1", name: "Ing. Carlos Méndez", color: "#3498DB", lastActive: new Date().toISOString() },
+                { id: "user2", name: "Arq. Ana López", color: "#9B59B6", lastActive: new Date().toISOString() },
+                { id: "user3", name: "Téc. Roberto Sánchez", color: "#2ECC71", lastActive: new Date(Date.now() - 300000).toISOString() }
+            ];
+            
+            // Agregar usuario actual a la lista
+            onlineUsers.push({
+                id: currentUser.id,
+                name: currentUser.name,
+                color: currentUser.color,
+                lastActive: new Date().toISOString()
+            });
+            
+            renderOnlineUsers();
+        }
+        
+        // Iniciar sincronización en tiempo real (simulada)
+        function startRealtimeSync() {
+            // En una implementación real, configurarías listeners de Firebase
+            console.log("Sincronización en tiempo real iniciada");
+            
+            // Simular actualizaciones periódicas
+            setInterval(() => {
+                // Simular actividad de otros usuarios
+                if (Math.random() > 0.7) {
+                    simulateOtherUserActivity();
+                }
+                
+                // Actualizar "última actividad" del usuario actual
+                updateUserActivity();
+                
+                // Actualizar estado de conexión
+                updateConnectionStatus();
+            }, 10000);
+        }
+        
+        // Simular actividad de otros usuarios
+        function simulateOtherUserActivity() {
+            const activities = [
+                { user: "Ing. Carlos Méndez", action: "agregó una observación" },
+                { user: "Arq. Ana López", action: "editó un documento" },
+                { user: "Téc. Roberto Sánchez", action: "completó una revisión" }
+            ];
+            
+            const activity = activities[Math.floor(Math.random() * activities.length)];
+            addRecentActivity(`${activity.user} ${activity.action}`);
+        }
+        
+        // Agregar nueva observación
+        function addNewObservation() {
+            const documentName = document.getElementById('document-name').value;
+            const observationName = document.getElementById('observation-name').value;
+            const priority = document.getElementById('priority').value;
+            const details = document.getElementById('observation-details').value;
+            
+            // Crear nueva observación
+            const newObservation = {
+                id: Date.now(),
+                document: documentName,
+                title: observationName,
+                priority: priority,
+                details: details,
+                date: new Date().toISOString(),
+                formattedDate: formatDate(new Date()),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                userColor: currentUser.color
+            };
+            
+            // Agregar al array
+            observations.unshift(newObservation);
+            
+            // En una implementación real, guardarías en Firebase
+            console.log("Observación guardada:", newObservation);
+            
+            // Actualizar interfaz
+            renderObservations();
+            updateStats();
+            addRecentActivity(`${currentUser.name} agregó una observación a "${documentName}"`);
+            
+            // Notificar a otros usuarios (simulado)
+            simulateNotification(`${currentUser.name} agregó una nueva observación`);
+            
+            // Limpiar formulario
+            document.getElementById('observation-form').reset();
+            document.getElementById('priority').value = 'medium';
+            
+            // Restablecer selectores de prioridad
+            document.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
+            document.querySelector('.priority-option.medium').classList.add('selected');
+            
+            // Mostrar mensaje de éxito
+            showNotification('Observación guardada y sincronizada', 'success');
+        }
+        
+        // Renderizar lista de observaciones
+        function renderObservations() {
+            const container = document.getElementById('observations-list');
+            
+            // Filtrar observaciones
+            let filteredObservations = observations;
+            
+            if (currentFilter !== 'all') {
+                filteredObservations = filteredObservations.filter(obs => obs.priority === currentFilter);
+            }
+            
+            if (currentSearch) {
+                filteredObservations = filteredObservations.filter(obs => 
+                    obs.document.toLowerCase().includes(currentSearch) ||
+                    obs.title.toLowerCase().includes(currentSearch) ||
+                    obs.details.toLowerCase().includes(currentSearch) ||
+                    obs.userName.toLowerCase().includes(currentSearch)
+                );
+            }
+            
+            // Si no hay observaciones
+            if (filteredObservations.length === 0) {
+                let emptyMessage = '<div class="empty-state">';
+                emptyMessage += '<i class="fas fa-clipboard-list"></i>';
+                emptyMessage += '<h3>No hay observaciones para mostrar</h3>';
+                
+                if (currentFilter !== 'all' || currentSearch) {
+                    emptyMessage += '<p>Intenta con otro filtro o término de búsqueda</p>';
+                } else {
+                    emptyMessage += '<p>Comienza agregando tu primera observación utilizando el formulario</p>';
+                }
+                
+                emptyMessage += '</div>';
+                container.innerHTML = emptyMessage;
+                return;
+            }
+            
+            // Generar HTML de observaciones
+            let html = '';
+            
+            filteredObservations.forEach(observation => {
+                const priorityClass = `priority-${observation.priority}`;
+                const priorityText = observation.priority === 'low' ? 'Baja' : 
+                                    observation.priority === 'medium' ? 'Media' : 'Alta';
+                
+                const isOwnObservation = observation.userId === currentUser.id;
+                
+                html += `
+                <div class="observation-item">
+                    <div class="observation-header">
+                        <div>
+                            <div class="observation-title">${observation.title}</div>
+                            <div class="observation-doc"><i class="fas fa-file"></i> ${observation.document}</div>
+                        </div>
+                        <span class="observation-priority ${priorityClass}">${priorityText}</span>
+                    </div>
+                    
+                    <div class="observation-content">
+                        ${observation.details.replace(/\n/g, '<br>')}
+                    </div>
+                    
+                    <div class="observation-meta">
+                        <div class="observation-user">
+                            <div class="user-badge" style="background-color: ${observation.userColor}">
+                                ${observation.userName.charAt(0).toUpperCase()}
+                            </div>
+                            ${observation.userName}${isOwnObservation ? ' (Tú)' : ''}
+                        </div>
+                        <div class="observation-date">
+                            <i class="far fa-calendar"></i> ${observation.formattedDate}
+                        </div>
+                    </div>
+                    
+                    ${isOwnObservation ? `
+                    <div class="observation-actions">
+                        <div class="action-btn" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </div>
+                        <div class="action-btn" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Agregar eventos a los botones de acción
+            document.querySelectorAll('.observation-actions .action-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const observationItem = this.closest('.observation-item');
+                    const title = observationItem.querySelector('.observation-title').textContent;
+                    
+                    if (this.querySelector('.fa-trash')) {
+                        if (confirm(`¿Eliminar la observación "${title}"?`)) {
+                            observationItem.remove();
+                            showNotification('Observación eliminada', 'success');
+                        }
+                    } else if (this.querySelector('.fa-edit')) {
+                        showNotification('Función de edición en desarrollo', 'warning');
+                    }
+                });
+            });
+        }
+        
+        // Renderizar usuarios en línea
+        function renderOnlineUsers() {
+            const container = document.getElementById('online-list');
+            const headerContainer = document.getElementById('online-users');
+            
+            if (onlineUsers.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--gray);">No hay usuarios conectados</p>';
+                headerContainer.innerHTML = '<span>No hay usuarios en línea</span>';
+                return;
+            }
+            
+            // Para la lista principal
+            let html = '';
+            onlineUsers.forEach(user => {
+                const isCurrentUser = user.id === currentUser.id;
+                const isActive = new Date() - new Date(user.lastActive) < 300000; // 5 minutos
+                
+                html += `
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 8px; background-color: white; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${isActive ? '#2ECC71' : '#E74C3C'}"></div>
+                        <div class="user-badge" style="width: 30px; height: 30px; background-color: ${user.color}">
+                            ${user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span style="font-weight: 600; color: var(--primary);">${user.name}${isCurrentUser ? ' (Tú)' : ''}</span>
+                    </div>
+                    <span style="margin-left: auto; font-size: 0.8rem; color: var(--gray);">
+                        ${isActive ? 'En línea' : 'Inactivo'}
+                    </span>
+                </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Para el header (versión compacta)
+            let headerHtml = '';
+            onlineUsers.slice(0, 3).forEach(user => {
+                headerHtml += `
+                <div class="online-user">
+                    <div class="user-dot" style="background-color: ${user.color};"></div>
+                    ${user.name}
+                </div>
+                `;
+            });
+            
+            if (onlineUsers.length > 3) {
+                headerHtml += `<div class="online-user">+${onlineUsers.length - 3} más</div>`;
+            }
+            
+            headerContainer.innerHTML = headerHtml;
+        }
+        
+        // Renderizar chat
+        function renderChat() {
+            const container = document.getElementById('chat-messages');
+            
+            if (chatMessages.length === 0) {
+                container.innerHTML = '<div class="chat-message message-received"><div class="message-header"><span>Sistema</span><span>Ahora</span></div>No hay mensajes aún</div>';
+                return;
+            }
+            
+            let html = '';
+            chatMessages.forEach(msg => {
+                const isCurrentUser = msg.userId === currentUser.id;
+                const isSystem = msg.userId === 'system';
+                
+                const messageClass = isSystem ? 'message-received' : (isCurrentUser ? 'message-sent' : 'message-received');
+                
+                html += `
+                <div class="chat-message ${messageClass}">
+                    <div class="message-header">
+                        <span style="color: ${msg.userColor}; font-weight: 600;">${msg.userName}</span>
+                        <span>${msg.formattedTime || 'Ahora'}</span>
+                    </div>
+                    ${msg.message}
+                </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Desplazar hacia abajo para ver el mensaje más reciente
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // Enviar mensaje de chat
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Crear mensaje
+            const newMessage = {
+                id: Date.now(),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                userColor: currentUser.color,
+                message: message,
+                timestamp: new Date().toISOString(),
+                formattedTime: formatTime(new Date())
+            };
+            
+            // Agregar al array
+            chatMessages.push(newMessage);
+            
+            // En una implementación real, enviarías a Firebase
+            console.log("Mensaje enviado:", newMessage);
+            
+            // Actualizar interfaz
+            renderChat();
+            
+            // Simular respuesta automática
+            simulateChatResponse(message);
+            
+            // Limpiar input
+            input.value = '';
+            input.focus();
+            
+            // Agregar actividad reciente
+            addRecentActivity(`${currentUser.name} envió un mensaje en el chat`);
+        }
+        
+        // Simular respuesta automática en el chat
+        function simulateChatResponse(message) {
+            // Solo responder a ciertos mensajes
+            const lowerMessage = message.toLowerCase();
+            
+            let response = null;
+            
+            if (lowerMessage.includes('hola') || lowerMessage.includes('buenos días') || lowerMessage.includes('buenas tardes')) {
+                response = `Hola ${currentUser.name}, ¿en qué puedo ayudarte con el expediente?`;
+            } else if (lowerMessage.includes('observación') || lowerMessage.includes('revisar')) {
+                response = "Recuerda que puedes agregar observaciones usando el formulario arriba a la izquierda.";
+            } else if (lowerMessage.includes('prioridad') || lowerMessage.includes('urgente')) {
+                response = "No olvides marcar la prioridad de cada observación (baja, media, alta).";
+            } else if (lowerMessage.includes('documento') || lowerMessage.includes('archivo')) {
+                response = "Asegúrate de especificar correctamente el nombre del documento en cada observación.";
+            } else if (lowerMessage.includes('gracias') || lowerMessage.includes('ok')) {
+                return; // No responder a agradecimientos
+            } else if (Math.random() > 0.7) {
+                response = "¿Necesitas ayuda con algo específico del expediente?";
+            }
+            
+            if (response) {
+                setTimeout(() => {
+                    const systemMessage = {
+                        id: Date.now() + 1,
+                        userId: "system",
+                        userName: "Sistema",
+                        userColor: "#95A5A6",
+                        message: response,
+                        timestamp: new Date().toISOString(),
+                        formattedTime: formatTime(new Date())
+                    };
+                    
+                    chatMessages.push(systemMessage);
+                    renderChat();
+                }, 1000);
+            }
+        }
+        
+        // Agregar mensaje del sistema
+        function addSystemMessage(message) {
+            const systemMessage = {
+                id: Date.now(),
+                userId: "system",
+                userName: "Sistema",
+                userColor: "#95A5A6",
+                message: message,
+                timestamp: new Date().toISOString(),
+                formattedTime: formatTime(new Date())
+            };
+            
+            chatMessages.push(systemMessage);
+            renderChat();
+        }
+        
+        // Actualizar actividad reciente
+        function updateRecentActivity() {
+            const container = document.getElementById('recent-activity');
+            
+            // Actividades de ejemplo
+            const activities = [
+                `${currentUser.name} se unió al proyecto`,
+                "Ing. Carlos Méndez revisó los planos estructurales",
+                "Arq. Ana López actualizó las especificaciones",
+                "Téc. Roberto Sánchez agregó 3 observaciones nuevas"
+            ];
+            
+            let html = '';
+            activities.slice(0, 3).forEach(activity => {
+                html += `
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent);"></div>
+                    <span style="font-size: 0.9rem;">${activity}</span>
+                </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Agregar actividad reciente
+        function addRecentActivity(activity) {
+            const container = document.getElementById('recent-activity');
+            
+            // Agregar al inicio
+            const newActivity = `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent);"></div>
+                <span style="font-size: 0.9rem;">${activity}</span>
+            </div>
+            `;
+            
+            container.innerHTML = newActivity + container.innerHTML;
+        }
+        
+        // Actualizar estadísticas
+        function updateStats() {
+            // En una implementación real, actualizarías los elementos del DOM
+            console.log("Estadísticas actualizadas");
+        }
+        
+        // Actualizar actividad del usuario
+        function updateUserActivity() {
+            if (!currentUser) return;
+            
+            // Actualizar timestamp del usuario
+            currentUser.lastActive = new Date().toISOString();
+            
+            // En una implementación real, actualizarías en Firebase
+        }
+        
+        // Actualizar estado de conexión
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('sync-status');
+            const icon = statusElement.querySelector('i');
+            const text = statusElement.querySelector('span');
+            
+            // Simular cambios de estado aleatorios
+            if (Math.random() > 0.95) {
+                icon.style.color = '#E74C3C';
+                text.textContent = 'Desconectado';
+            } else {
+                icon.style.color = '#2ECC71';
+                text.textContent = 'Sincronizado';
+            }
+        }
+        
+        // Simular notificación a otros usuarios
+        function simulateNotification(message) {
+            console.log(`Notificación para otros usuarios: ${message}`);
+            
+            // En una implementación real, usarías Firebase Cloud Messaging
+            if (Math.random() > 0.5) {
+                showNotification(`Nueva actividad en el proyecto: ${message}`, 'info');
+            }
+        }
+        
+        // Funciones auxiliares
+        function generateUserId() {
+            return 'user_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        function getUserColor(username) {
+            // Asignar un color basado en el nombre de usuario
+            const colors = ['#3498DB', '#9B59B6', '#2ECC71', '#E67E22', '#E74C3C', '#1ABC9C', '#34495E'];
+            const hash = username.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            return colors[hash % colors.length];
+        }
+        
+        function formatDate(date) {
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            return date.toLocaleDateString('es-ES', options);
+        }
+        
+        function formatTime(date) {
+            return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        function showNotification(message, type) {
+            // Crear elemento de notificación
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+                max-width: 400px;
+            `;
+            
+            // Color según tipo
+            if (type === 'success') {
+                notification.style.backgroundColor = 'var(--success)';
+            } else if (type === 'warning') {
+                notification.style.backgroundColor = 'var(--warning)';
+            } else if (type === 'info') {
+                notification.style.backgroundColor = 'var(--secondary)';
+            } else {
+                notification.style.backgroundColor = 'var(--danger)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Eliminar después de 3 segundos
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+            
+            // Agregar estilos de animación si no existen
+            if (!document.getElementById('notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+    </script>
+</body>
+</html>
